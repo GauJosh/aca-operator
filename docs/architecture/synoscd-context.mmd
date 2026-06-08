@@ -1,0 +1,29 @@
+flowchart LR
+  Dev[Developer] -->|PR/Merge| Git[(Git Repo)]
+
+  Git -->|Webhook| GHApp[GitHub App]
+  GHApp --> SynosCD[SynosCD Operator\n(runs as ACA in ACE)]
+
+  subgraph Azure[Azure Subscription]
+    subgraph RG[Resource Group]
+      TF[Terraform + az cli\n(ACE/Foundation owner)]
+      ACE[ACA Environment (ACE)]
+      ACA1[ACA App A]
+      ACA2[ACA App B]
+      ACA3[ACA App C]
+      KV[Key Vault / Secrets]
+      ARM[Azure ARM / ACA API]
+    end
+  end
+
+  SynosCD -->|Periodic Pull + Reconcile| Git
+  SynosCD -->|Read/Write desired vs live| ARM
+  SynosCD -->|Manage only labeled resources| ACA1
+  SynosCD -->|Manage only labeled resources| ACA2
+  SynosCD -->|Manage only labeled resources| ACA3
+  SynosCD -->|Resolve secret refs| KV
+
+  TF -->|Creates/updates| ACE
+  TF -->|Deploys bootstrap app| SynosCD
+
+  SynosCLI[synos CLI] -->|diff/sync/status| SynosCD
