@@ -2,7 +2,7 @@
 
 ## Phase 0 — Discovery
 
-- Finalize Go vs Python decision.
+- Language decision complete: Python-first (with Go re-evaluation triggers).
 - Define ownership boundaries (Terraform vs SynosCD).
 - Agree minimum schema for desired state.
 

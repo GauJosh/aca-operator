@@ -1,6 +1,6 @@
 # Decision Record: Go vs Python for SynosCD
 
-Status: Draft  
+Status: Accepted (Python-first)  
 Date: 2026-06-08
 
 ## Decision Scope
@@ -29,17 +29,31 @@ Choose implementation language for:
 | Observability + profiling ergonomics | 3 | 4 | 4 | Both good with standard tooling |
 | Total weighted score |  | TBD | TBD | Fill after calibrating weights |
 
-## Recommendation Shape
+## Decision
 
-- **Default recommendation:** Go for operator core.
-- **Pragmatic option:** Python for CLI and auxiliary tooling if that aligns with team skills.
-- **Alternative if Python-first mandate:** Build operator in Python with stricter guardrails:
-  - explicit worker limits
-  - robust retry/idempotency strategy
-  - memory/latency SLOs and load tests early
+- Start SynosCD with **Python** for both operator and `synos` CLI.
+- Keep implementation modular so a future operator-core migration to Go is possible without changing user-facing schema.
+
+## Operating Guardrails (Python-first)
+
+- Use explicit worker limits for reconcile concurrency.
+- Enforce idempotent apply + retry with jittered backoff.
+- Track SLOs for reconcile latency, memory, and error rate from day one.
+- Treat packaging and runtime reproducibility as release gates.
+
+## Re-evaluation Triggers (switch consideration to Go)
+
+- Sustained memory/CPU costs exceed agreed budget for target scale.
+- Reconcile throughput cannot meet SLOs after optimization.
+- Operational complexity (packaging/debug/startup reliability) becomes a repeated incident source.
+- Team confirms long-term controller investment where Go materially reduces risk.
 
 ## Open Questions
 
 - Is one language required across operator + CLI by platform standards?
 - What are target scale expectations (apps per ACE, reconcile frequency)?
 - Is cold-start/footprint a hard cost constraint?
+
+## Review Date
+
+- Reassess after MVP + first production pilot (or earlier if any trigger is met).

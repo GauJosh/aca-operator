@@ -1,0 +1,23 @@
+apiVersion: synoscd.io/v1alpha1
+kind: App
+metadata:
+  name: worker-job
+  namespace: production
+  labels:
+    synoscd.io/managed: "true"
+    team: backend
+spec:
+  containers:
+    - name: worker
+      image: myacr.azurecr.io/worker:latest
+      cpu: 1.0
+      memory: 2Gi
+  environment:
+    - name: QUEUE_NAME
+      value: default-queue
+    - name: MAX_WORKERS
+      value: "5"
+  scale:
+    minReplicas: 1
+    maxReplicas: 3
+  suspend: false

@@ -1,0 +1,20 @@
+apiVersion: synoscd.io/v1alpha1
+kind: Project
+metadata:
+  name: backend-services
+  namespace: production
+spec:
+  apps:
+    - my-api-service
+    - worker-job
+  defaults:
+    ingress:
+      enabled: false
+    scale:
+      minReplicas: 1
+      maxReplicas: 5
+  policy:
+    allowedRegistries:
+      - myacr.azurecr.io
+    maxMemory: 4Gi
+    maxCpu: 4.0
