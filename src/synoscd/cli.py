@@ -46,7 +46,8 @@ def operator(config_path: Optional[str] = typer.Option(None, help="Path to confi
     config = SynoscdConfig()
 
     # Initialize clients
-    repo_owner, repo_name = config.github_repo_name.split("/")
+    repo_owner = config.github_repo_owner
+    repo_name = config.github_repo_name
     github_client = GitHubAppClient(
         app_id=config.github_app_id,
         private_key=config.github_app_private_key,
@@ -84,7 +85,8 @@ def sync(
     log.msg("Forcing reconciliation sync")
 
     config = SynoscdConfig()
-    repo_owner, repo_name = config.github_repo_name.split("/")
+    repo_owner = config.github_repo_owner
+    repo_name = config.github_repo_name
 
     github_client = GitHubAppClient(
         app_id=config.github_app_id,

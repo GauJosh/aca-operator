@@ -4,7 +4,7 @@
 import asyncio
 from typing import Optional, Dict, Any, List
 from azure.identity import ManagedIdentityCredential
-from azure.mgmt.containerinstances import ContainerInstancesManagementClient
+from azure.mgmt.appcontainers import ContainerAppsAPIClient
 from synoscd.logger import get_logger
 
 log = get_logger(__name__)
@@ -18,8 +18,10 @@ class ACAClient:
         self.resource_group = resource_group
         self.environment_name = environment_name
         self.credential = ManagedIdentityCredential()
-        # Note: in production use proper ACA SDK when available
-        # For now, placeholder for eventual Azure SDK integration
+        self.client = ContainerAppsAPIClient(
+            credential=self.credential,
+            subscription_id=subscription_id,
+        )
 
     async def get_app(self, app_name: str) -> Optional[Dict[str, Any]]:
         """Fetch a live ACA app resource."""

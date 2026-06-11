@@ -1,3 +1,4 @@
+[project]
 name = "synoscd"
 version = "0.1.0"
 description = "GitOps operator for Azure Container Apps"
@@ -10,7 +11,7 @@ dependencies = [
     "pydantic>=2.0",
     "pyyaml>=6.0",
     "azure-identity>=1.13",
-    "azure-mgmt-containerinstances>=10.0",
+    "azure-mgmt-appcontainers>=1.0",
     "httpx>=0.24",
     "structlog>=23.0",
     "typer>=0.9",
@@ -30,5 +31,5 @@ dev = [
 synos = "synoscd.cli:main"
 
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=65.0"]
+build-backend = "setuptools.build_meta"

@@ -2,12 +2,10 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install dependencies
+# Copy project and install
 COPY pyproject.toml .
-RUN pip install --no-cache-dir -e .
-
-# Copy source
 COPY src/ /app/src/
+RUN pip install --no-cache-dir .
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
