@@ -39,7 +39,7 @@ class GitHubAppClient:
             "exp": now + 300,  # 5 min validity
             "iss": self.app_id,
         }
-        return jwt.encode(self.private_key, payload, algorithm="RS256")
+        return jwt.encode(payload, self.private_key, algorithm="RS256")
 
     def _get_access_token(self) -> str:
         """Get access token for the installation."""
