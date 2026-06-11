@@ -119,7 +119,7 @@ class GitHubAppClient:
                         resources[name] = doc
                         log.msg("Parsed YAML resource", file=item["name"], name=name)
             except Exception as e:
-                log.exc(e, "Failed to parse YAML file", file=item["name"])
+                log.exception("Failed to parse YAML file", file=item["name"], error=str(e))
 
         return resources
 

@@ -107,7 +107,7 @@ def sync(
         result = asyncio.run(reconciler.sync_once())
         log.msg("Sync completed", result=result)
     except Exception as e:
-        log.exc(e, "Sync failed")
+        log.exception("Sync failed", error=str(e))
         raise typer.Exit(code=1)
 
 

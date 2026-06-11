@@ -43,7 +43,7 @@ class Reconciler:
             return results
 
         except Exception as e:
-            log.exc(e, "Reconciliation pass failed")
+            log.exception("Reconciliation pass failed", error=str(e))
             raise ReconcileError(str(e))
 
     async def _fetch_desired_state(self) -> Dict[str, Resource]:
@@ -57,11 +57,11 @@ class Reconciler:
                     resource = parse_resource(data)
                     resources[name] = resource
                 except Exception as e:
-                    log.exc(e, "Failed to parse resource from GitHub", name=name)
+                    log.exception("Failed to parse resource from GitHub", name=name, error=str(e))
 
             return resources
         except Exception as e:
-            log.exc(e, "Failed to fetch desired state from GitHub")
+            log.exception("Failed to fetch desired state from GitHub", error=str(e))
             raise
 
     async def _reconcile_resources(self, desired: Dict[str, Resource]) -> Dict[str, Any]:
@@ -83,7 +83,7 @@ class Reconciler:
                     results["skipped"].append(name)
             except Exception as e:
                 results["failed"].append({"name": name, "error": str(e)})
-                log.exc(e, "Failed to reconcile resource", name=name)
+                log.exception("Failed to reconcile resource", name=name, error=str(e))
 
         return results
 
@@ -145,7 +145,7 @@ class OperatorLoop:
             try:
                 await self.reconciler.sync_once()
             except Exception as e:
-                log.exc(e, "Error in operator loop, will retry")
+                log.exception("Error in operator loop, will retry", error=str(e))
 
             await asyncio.sleep(self.interval_seconds)
 
