@@ -14,6 +14,7 @@ class SynoscdConfig(BaseSettings):
     github_app_installation_id: str
     github_repo_owner: str
     github_repo_name: str
+    github_config_path: str = "apps"
 
     # Azure
     azure_subscription_id: str

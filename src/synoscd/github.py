@@ -6,7 +6,7 @@ import jwt
 import time
 import yaml
 from typing import List, Dict, Any, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from synoscd.logger import get_logger
 
 log = get_logger(__name__)
@@ -43,7 +43,7 @@ class GitHubAppClient:
 
     def _get_access_token(self) -> str:
         """Get access token for the installation."""
-        if self._token and self._token_expires_at and datetime.utcnow() < self._token_expires_at:
+        if self._token and self._token_expires_at and datetime.now(timezone.utc) < self._token_expires_at:
             return self._token
 
         jwt_token = self._get_jwt()

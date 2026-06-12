@@ -19,9 +19,10 @@ class ReconcileError(Exception):
 class Reconciler:
     """Main reconciliation loop."""
 
-    def __init__(self, github: GitHubAppClient, aca: ACAClient):
+    def __init__(self, github: GitHubAppClient, aca: ACAClient, config_path: str = "apps"):
         self.github = github
         self.aca = aca
+        self.config_path = config_path
 
     async def sync_once(self) -> Dict[str, Any]:
         """Run a single reconciliation pass."""
@@ -49,7 +50,7 @@ class Reconciler:
     async def _fetch_desired_state(self) -> Dict[str, Resource]:
         """Fetch desired state from GitHub."""
         try:
-            raw_resources = await self.github.fetch_directory_yaml_files()
+            raw_resources = await self.github.fetch_directory_yaml_files(directory=self.config_path)
             resources = {}
 
             for name, data in raw_resources.items():

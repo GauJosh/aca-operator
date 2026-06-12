@@ -1,12 +1,15 @@
 # SynosCD Logger Setup
 # Structured logging with structlog
 
+import logging
 import structlog
 from typing import Optional
 
 
 def setup_logging(log_level: str = "INFO", structured: bool = True):
     """Initialize structured logging."""
+    level = getattr(logging, log_level.upper(), logging.INFO)
+    logging.basicConfig(level=level)
     
     if structured:
         structlog.configure(

@@ -62,7 +62,7 @@ def operator(config_path: Optional[str] = typer.Option(None, help="Path to confi
     )
 
     # Create reconciler and operator loop
-    reconciler = Reconciler(github_client, aca_client)
+    reconciler = Reconciler(github_client, aca_client, config_path=config.github_config_path)
     operator_loop = OperatorLoop(
         reconciler,
         interval_seconds=config.reconcile_interval_seconds,
@@ -101,7 +101,7 @@ def sync(
         environment_name=config.azure_container_app_environment,
     )
 
-    reconciler = Reconciler(github_client, aca_client)
+    reconciler = Reconciler(github_client, aca_client, config_path=config.github_config_path)
 
     try:
         result = asyncio.run(reconciler.sync_once())
