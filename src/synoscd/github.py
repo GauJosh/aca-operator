@@ -5,7 +5,7 @@ import httpx
 import jwt
 import time
 import yaml
-from typing import List, Dict, Any, Optional
+from typing import Dict, Any, Optional
 from datetime import datetime, timedelta, timezone
 from synoscd.logger import get_logger
 
