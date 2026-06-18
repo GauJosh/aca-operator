@@ -3,7 +3,7 @@
 
 import asyncio
 from typing import Optional, Dict, Any, List
-from azure.identity import ManagedIdentityCredential
+from azure.identity import DefaultAzureCredential
 import httpx
 from synoscd.logger import get_logger
 
@@ -27,7 +27,9 @@ class ACAClient:
         self.subscription_id = subscription_id
         self.resource_group = resource_group
         self.environment_name = environment_name
-        self.credential = ManagedIdentityCredential(client_id=managed_identity_client_id)
+        self.credential = DefaultAzureCredential(
+            managed_identity_client_id=managed_identity_client_id
+        )
         self._base_url = "https://management.azure.com"
         self._cached_location: Optional[str] = None
 
@@ -225,6 +227,21 @@ class ACAClient:
     async def needs_update(self, desired_spec: Dict[str, Any], live_app: Optional[Dict[str, Any]]) -> bool:
         if not live_app:
             return True
+
+        properties = live_app.get("properties", {})
+        provisioning_state = (properties.get("provisioningState") or "").lower()
+        latest_revision = properties.get("latestRevisionName")
+        latest_ready_revision = properties.get("latestReadyRevisionName")
+
+        if provisioning_state != "succeeded" or not latest_ready_revision:
+            log.msg(
+                "Live app not healthy, forcing reconcile",
+                provisioning_state=provisioning_state or "unknown",
+                latest_revision=latest_revision,
+                latest_ready_revision=latest_ready_revision,
+            )
+            return True
+
         return self._normalize_desired(desired_spec) != self._normalize_live(live_app)
 
     def is_managed_by_synoscd(self, app: Dict[str, Any]) -> bool:
@@ -317,8 +334,21 @@ class ACAClient:
             )
             raise
         final = await self._wait_lro(response)
-        state = final.get("properties", {}).get("provisioningState", "")
-        return state.lower() != "failed"
+        state = (final.get("properties", {}).get("provisioningState") or "").lower()
+        if state != "succeeded":
+            properties = final.get("properties", {})
+            log.error(
+                "ACA app provisioning not succeeded",
+                app_name=app_name,
+                provisioning_state=state or "unknown",
+                latest_revision=properties.get("latestRevisionName"),
+                latest_ready_revision=properties.get("latestReadyRevisionName"),
+                running_status=properties.get("runningStatus"),
+                deployment_errors=properties.get("deploymentErrors"),
+                provisioning_errors=properties.get("provisioningErrors"),
+            )
+            return False
+        return True
 
     async def delete_app(self, app_name: str) -> bool:
         """Delete an ACA app."""

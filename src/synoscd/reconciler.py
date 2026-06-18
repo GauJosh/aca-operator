@@ -153,7 +153,9 @@ class Reconciler:
         # Diff and apply if needed
         if await self.aca.needs_update(app.spec.model_dump(), live_app):
             log.msg("App differs from desired state, applying", app_name=app.metadata.name)
-            await self.aca.create_or_update_app(app.metadata.name, app.spec.model_dump())
+            applied = await self.aca.create_or_update_app(app.metadata.name, app.spec.model_dump())
+            if not applied:
+                raise RuntimeError(f"Provisioning did not succeed for app '{app.metadata.name}'")
         else:
             log.msg("App matches desired state", app_name=app.metadata.name)
 
