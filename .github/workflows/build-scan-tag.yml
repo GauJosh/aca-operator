@@ -12,6 +12,11 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
 jobs:
   lint:
     name: Lint & Format Check
