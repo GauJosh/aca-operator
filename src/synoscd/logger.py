@@ -9,7 +9,7 @@ from typing import Optional
 def setup_logging(log_level: str = "INFO", structured: bool = True):
     """Initialize structured logging."""
     level = getattr(logging, log_level.upper(), logging.INFO)
-    logging.basicConfig(level=level)
+    logging.basicConfig(level=level, force=True)
     
     if structured:
         structlog.configure(
@@ -25,6 +25,7 @@ def setup_logging(log_level: str = "INFO", structured: bool = True):
                 structlog.processors.JSONRenderer(),
             ],
             context_class=dict,
+            wrapper_class=structlog.make_filtering_bound_logger(level),
             logger_factory=structlog.stdlib.LoggerFactory(),
             cache_logger_on_first_use=True,
         )
@@ -36,6 +37,7 @@ def setup_logging(log_level: str = "INFO", structured: bool = True):
                 structlog.dev.ConsoleRenderer(),
             ],
             context_class=dict,
+            wrapper_class=structlog.make_filtering_bound_logger(level),
             logger_factory=structlog.stdlib.LoggerFactory(),
             cache_logger_on_first_use=True,
         )

@@ -14,6 +14,10 @@ app = typer.Typer(help="SynosCD GitOps operator for Azure Container Apps")
 log = get_logger(__name__)
 
 
+def _parse_csv(value: str) -> list[str]:
+    return [item.strip() for item in value.split(",") if item.strip()]
+
+
 @app.command()
 def bootstrap(
     github_app_id: str = typer.Option(..., help="GitHub App ID"),
@@ -59,10 +63,17 @@ def operator(config_path: Optional[str] = typer.Option(None, help="Path to confi
         subscription_id=config.azure_subscription_id,
         resource_group=config.azure_resource_group,
         environment_name=config.azure_container_app_environment,
+        managed_identity_client_id=config.azure_managed_identity_client_id,
     )
 
     # Create reconciler and operator loop
-    reconciler = Reconciler(github_client, aca_client, config_path=config.github_config_path)
+    reconciler = Reconciler(
+        github_client,
+        aca_client,
+        config_path=config.github_config_path,
+        prune_enabled=config.prune_enabled,
+        protected_apps=_parse_csv(config.protected_apps_csv),
+    )
     operator_loop = OperatorLoop(
         reconciler,
         interval_seconds=config.reconcile_interval_seconds,
@@ -99,9 +110,16 @@ def sync(
         subscription_id=config.azure_subscription_id,
         resource_group=config.azure_resource_group,
         environment_name=config.azure_container_app_environment,
+        managed_identity_client_id=config.azure_managed_identity_client_id,
     )
 
-    reconciler = Reconciler(github_client, aca_client, config_path=config.github_config_path)
+    reconciler = Reconciler(
+        github_client,
+        aca_client,
+        config_path=config.github_config_path,
+        prune_enabled=config.prune_enabled,
+        protected_apps=_parse_csv(config.protected_apps_csv),
+    )
 
     try:
         result = asyncio.run(reconciler.sync_once())

@@ -20,11 +20,16 @@ class SynoscdConfig(BaseSettings):
     azure_subscription_id: str
     azure_resource_group: str
     azure_container_app_environment: str
+    azure_managed_identity_client_id: Optional[str] = None
 
     # Reconciliation
     reconcile_interval_seconds: int = 300  # 5 minutes
     webhook_enabled: bool = True
     max_concurrent_reconciles: int = 3
+    prune_enabled: bool = False
+    managed_tag_key: str = "synoscd-managed"
+    managed_tag_value: str = "true"
+    protected_apps_csv: str = "synoscd-operator"
 
     # Logging
     log_level: str = "INFO"

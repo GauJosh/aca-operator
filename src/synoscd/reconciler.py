@@ -19,10 +19,19 @@ class ReconcileError(Exception):
 class Reconciler:
     """Main reconciliation loop."""
 
-    def __init__(self, github: GitHubAppClient, aca: ACAClient, config_path: str = "apps"):
+    def __init__(
+        self,
+        github: GitHubAppClient,
+        aca: ACAClient,
+        config_path: str = "apps",
+        prune_enabled: bool = False,
+        protected_apps: Optional[List[str]] = None,
+    ):
         self.github = github
         self.aca = aca
         self.config_path = config_path
+        self.prune_enabled = prune_enabled
+        self.protected_apps = set(protected_apps or [])
 
     async def sync_once(self) -> Dict[str, Any]:
         """Run a single reconciliation pass."""
@@ -38,7 +47,7 @@ class Reconciler:
             log.msg("Fetched live apps from Azure", count=len(live_apps))
 
             # 3. Reconcile each resource
-            results = await self._reconcile_resources(desired_resources)
+            results = await self._reconcile_resources(desired_resources, live_apps)
             log.msg("Reconciliation pass complete", results=results)
 
             return results
@@ -65,12 +74,13 @@ class Reconciler:
             log.exception("Failed to fetch desired state from GitHub", error=str(e))
             raise
 
-    async def _reconcile_resources(self, desired: Dict[str, Resource]) -> Dict[str, Any]:
+    async def _reconcile_resources(self, desired: Dict[str, Resource], live_apps: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Reconcile desired resources against live state."""
         results = {
             "synced": [],
             "failed": [],
             "skipped": [],
+            "pruned": [],
         }
 
         for name, resource in desired.items():
@@ -86,7 +96,45 @@ class Reconciler:
                 results["failed"].append({"name": name, "error": str(e)})
                 log.exception("Failed to reconcile resource", name=name, error=str(e))
 
+        await self._prune_removed_apps(desired, live_apps, results)
+
         return results
+
+    async def _prune_removed_apps(
+        self,
+        desired: Dict[str, Resource],
+        live_apps: List[Dict[str, Any]],
+        results: Dict[str, Any],
+    ) -> None:
+        if not self.prune_enabled:
+            return
+
+        desired_names = {
+            resource.metadata.name
+            for resource in desired.values()
+            if isinstance(resource, App)
+        }
+
+        for live in live_apps:
+            app_name = live.get("name")
+            if not app_name:
+                continue
+            if app_name in desired_names:
+                continue
+            if app_name in self.protected_apps:
+                results["skipped"].append(app_name)
+                continue
+            if not self.aca.is_managed_by_synoscd(live):
+                results["skipped"].append(app_name)
+                continue
+
+            try:
+                await self.aca.delete_app(app_name)
+                results["pruned"].append(app_name)
+                log.msg("Pruned managed app missing from desired state", app_name=app_name)
+            except Exception as error:
+                results["failed"].append({"name": app_name, "error": str(error)})
+                log.exception("Failed to prune app", app_name=app_name, error=str(error))
 
     async def _reconcile_app(self, app: App) -> None:
         """Reconcile a single App resource."""
@@ -103,7 +151,7 @@ class Reconciler:
         live_app = await self.aca.get_app(app.metadata.name)
 
         # Diff and apply if needed
-        if self._needs_update(app, live_app):
+        if await self.aca.needs_update(app.spec.model_dump(), live_app):
             log.msg("App differs from desired state, applying", app_name=app.metadata.name)
             await self.aca.create_or_update_app(app.metadata.name, app.spec.model_dump())
         else:
@@ -119,8 +167,7 @@ class Reconciler:
         """Check if live app differs from desired."""
         if live is None:
             return True  # App doesn't exist, needs creation
-        # TODO: implement actual diff logic
-        return False
+        return True
 
 
 class OperatorLoop:
