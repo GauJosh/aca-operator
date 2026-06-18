@@ -1,12 +1,19 @@
-# SynosCD
+# SynosCD - GitOps Operator for Azure Container Apps
 
-SynosCD is a GitOps-style operator for Azure Container Apps (ACA) running inside an ACA Environment (ACE).
+[![Build, Test, Scan & Tag](https://github.com/GauJosh/aca-operator/actions/workflows/build-scan-tag.yml/badge.svg)](https://github.com/GauJosh/aca-operator/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.9+](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-It follows a Flux-like model for ACA:
-- Git is source of truth
-- Operator continuously reconciles desired state from Git
-- Drift is detected and healed by re-applying desired state
-- Safety guardrails prevent accidental deletion by default
+**Declarative, GitOps-based application management for Azure Container Apps.** Deploy ACA apps from Git with automatic drift detection, health-aware reconciliation, and safety guardrails.
+
+SynosCD brings **Flux-like GitOps** to Azure Container Apps:
+- ✅ **Git as Source of Truth** - YAML manifests define desired state
+- ✅ **Automatic Drift Healing** - Operator continuously reconciles desired↔live state
+- ✅ **Health-Aware Reconciliation** - Failed/unready apps trigger automatic re-apply
+- ✅ **Safe by Default** - Managed ownership tagging + protected app list prevent accidental deletion
+- ✅ **Local Development** - Full support for `az login` based testing
+- ✅ **Production Grade** - Structured JSON logging, ARM validation, LRO polling
 
 ## What SynosCD Supports
 
