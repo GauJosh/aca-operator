@@ -21,8 +21,12 @@ def _parse_csv(value: str) -> list[str]:
 @app.command()
 def bootstrap(
     github_app_id: str = typer.Option(..., help="GitHub App ID"),
-    github_app_private_key: str = typer.Option(..., help="GitHub App private key (base64 or path)"),
-    github_app_installation_id: str = typer.Option(..., help="GitHub App installation ID"),
+    github_app_private_key: str = typer.Option(
+        ..., help="GitHub App private key (base64 or path)"
+    ),
+    github_app_installation_id: str = typer.Option(
+        ..., help="GitHub App installation ID"
+    ),
     github_repo: str = typer.Option(..., help="GitHub repo (owner/name)"),
     azure_subscription_id: str = typer.Option(..., help="Azure subscription ID"),
     azure_resource_group: str = typer.Option(..., help="Azure resource group name"),
@@ -41,7 +45,9 @@ def bootstrap(
 
 
 @app.command()
-def operator(config_path: Optional[str] = typer.Option(None, help="Path to config file")):
+def operator(
+    config_path: Optional[str] = typer.Option(None, help="Path to config file")
+):
     """Run the SynosCD operator loop."""
     setup_logging()
     log.msg("Starting SynosCD operator")

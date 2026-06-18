@@ -13,6 +13,7 @@ log = get_logger(__name__)
 
 class ReconcileError(Exception):
     """Reconciliation error."""
+
     pass
 
 
@@ -59,7 +60,9 @@ class Reconciler:
     async def _fetch_desired_state(self) -> Dict[str, Resource]:
         """Fetch desired state from GitHub."""
         try:
-            raw_resources = await self.github.fetch_directory_yaml_files(directory=self.config_path)
+            raw_resources = await self.github.fetch_directory_yaml_files(
+                directory=self.config_path
+            )
             resources = {}
 
             for name, data in raw_resources.items():
@@ -67,14 +70,18 @@ class Reconciler:
                     resource = parse_resource(data)
                     resources[name] = resource
                 except Exception as e:
-                    log.exception("Failed to parse resource from GitHub", name=name, error=str(e))
+                    log.exception(
+                        "Failed to parse resource from GitHub", name=name, error=str(e)
+                    )
 
             return resources
         except Exception as e:
             log.exception("Failed to fetch desired state from GitHub", error=str(e))
             raise
 
-    async def _reconcile_resources(self, desired: Dict[str, Resource], live_apps: List[Dict[str, Any]]) -> Dict[str, Any]:
+    async def _reconcile_resources(
+        self, desired: Dict[str, Resource], live_apps: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """Reconcile desired resources against live state."""
         results = {
             "synced": [],
@@ -131,10 +138,14 @@ class Reconciler:
             try:
                 await self.aca.delete_app(app_name)
                 results["pruned"].append(app_name)
-                log.msg("Pruned managed app missing from desired state", app_name=app_name)
+                log.msg(
+                    "Pruned managed app missing from desired state", app_name=app_name
+                )
             except Exception as error:
                 results["failed"].append({"name": app_name, "error": str(error)})
-                log.exception("Failed to prune app", app_name=app_name, error=str(error))
+                log.exception(
+                    "Failed to prune app", app_name=app_name, error=str(error)
+                )
 
     async def _reconcile_app(self, app: App) -> None:
         """Reconcile a single App resource."""
@@ -152,10 +163,16 @@ class Reconciler:
 
         # Diff and apply if needed
         if await self.aca.needs_update(app.spec.model_dump(), live_app):
-            log.msg("App differs from desired state, applying", app_name=app.metadata.name)
-            applied = await self.aca.create_or_update_app(app.metadata.name, app.spec.model_dump())
+            log.msg(
+                "App differs from desired state, applying", app_name=app.metadata.name
+            )
+            applied = await self.aca.create_or_update_app(
+                app.metadata.name, app.spec.model_dump()
+            )
             if not applied:
-                raise RuntimeError(f"Provisioning did not succeed for app '{app.metadata.name}'")
+                raise RuntimeError(
+                    f"Provisioning did not succeed for app '{app.metadata.name}'"
+                )
         else:
             log.msg("App matches desired state", app_name=app.metadata.name)
 

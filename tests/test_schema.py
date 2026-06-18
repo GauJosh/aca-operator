@@ -26,7 +26,7 @@ spec:
 """
     data = yaml.safe_load(yaml_str)
     app = parse_resource(data)
-    
+
     assert isinstance(app, App)
     assert app.metadata.name == "test-app"
     assert app.spec.containers[0].image == "myapp:latest"
@@ -47,7 +47,7 @@ spec:
 """
     data = yaml.safe_load(yaml_str)
     project = parse_resource(data)
-    
+
     assert isinstance(project, Project)
     assert project.metadata.name == "my-project"
     assert len(project.spec.apps) == 2

@@ -10,7 +10,7 @@ def setup_logging(log_level: str = "INFO", structured: bool = True):
     """Initialize structured logging."""
     level = getattr(logging, log_level.upper(), logging.INFO)
     logging.basicConfig(level=level, force=True)
-    
+
     if structured:
         structlog.configure(
             processors=[

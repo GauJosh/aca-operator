@@ -54,7 +54,9 @@ class ACAClient:
             f"/providers/Microsoft.App/managedEnvironments/{self.environment_name}"
         )
 
-    async def _request_json(self, method: str, path: str, payload: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    async def _request_json(
+        self, method: str, path: str, payload: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         url = f"{self._base_url}{path}"
         params = {"api-version": self.API_VERSION}
         async with httpx.AsyncClient(timeout=60.0) as client:
@@ -101,7 +103,9 @@ class ACAClient:
         return self._cached_location
 
     @staticmethod
-    def _build_env_vars(environment: Optional[List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
+    def _build_env_vars(
+        environment: Optional[List[Dict[str, Any]]],
+    ) -> List[Dict[str, Any]]:
         env_vars: List[Dict[str, Any]] = []
         if not environment:
             return env_vars
@@ -143,11 +147,17 @@ class ACAClient:
             "ingress": {
                 "enabled": bool(ingress.get("enabled", False)),
                 "external": bool(ingress.get("external", True)),
-                "targetPort": int(ingress.get("target_port", ingress.get("targetPort", 80))),
+                "targetPort": int(
+                    ingress.get("target_port", ingress.get("targetPort", 80))
+                ),
             },
             "scale": {
-                "minReplicas": int(scale.get("min_replicas", scale.get("minReplicas", 1))),
-                "maxReplicas": int(scale.get("max_replicas", scale.get("maxReplicas", 10))),
+                "minReplicas": int(
+                    scale.get("min_replicas", scale.get("minReplicas", 1))
+                ),
+                "maxReplicas": int(
+                    scale.get("max_replicas", scale.get("maxReplicas", 10))
+                ),
             },
         }
 
@@ -224,7 +234,9 @@ class ACAClient:
             },
         }
 
-    async def needs_update(self, desired_spec: Dict[str, Any], live_app: Optional[Dict[str, Any]]) -> bool:
+    async def needs_update(
+        self, desired_spec: Dict[str, Any], live_app: Optional[Dict[str, Any]]
+    ) -> bool:
         if not live_app:
             return True
 
@@ -250,7 +262,9 @@ class ACAClient:
 
     async def get_app(self, app_name: str) -> Optional[Dict[str, Any]]:
         """Fetch a live ACA app resource."""
-        log.msg("Fetching ACA app", app_name=app_name, resource_group=self.resource_group)
+        log.msg(
+            "Fetching ACA app", app_name=app_name, resource_group=self.resource_group
+        )
         path = self._app_resource_id(app_name)
         try:
             return await self._request_json("GET", path)
@@ -317,8 +331,11 @@ class ACAClient:
             }
 
         if spec.get("secrets"):
-            payload.setdefault("properties", {}).setdefault("configuration", {})["secrets"] = [
-                {"name": key, "value": value} for key, value in (spec.get("secrets") or {}).items()
+            payload.setdefault("properties", {}).setdefault("configuration", {})[
+                "secrets"
+            ] = [
+                {"name": key, "value": value}
+                for key, value in (spec.get("secrets") or {}).items()
             ]
 
         path = self._app_resource_id(app_name)

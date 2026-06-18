@@ -43,7 +43,11 @@ class GitHubAppClient:
 
     def _get_access_token(self) -> str:
         """Get access token for the installation."""
-        if self._token and self._token_expires_at and datetime.now(timezone.utc) < self._token_expires_at:
+        if (
+            self._token
+            and self._token_expires_at
+            and datetime.now(timezone.utc) < self._token_expires_at
+        ):
             return self._token
 
         jwt_token = self._get_jwt()
@@ -63,7 +67,9 @@ class GitHubAppClient:
         expires_at = datetime.fromisoformat(data["expires_at"].replace("Z", "+00:00"))
         self._token_expires_at = expires_at - timedelta(seconds=10)
 
-        log.msg("GitHub App access token acquired", installation_id=self.installation_id)
+        log.msg(
+            "GitHub App access token acquired", installation_id=self.installation_id
+        )
         return self._token
 
     async def fetch_file_content(self, file_path: str, ref: str = "main") -> str:
@@ -106,7 +112,11 @@ class GitHubAppClient:
             response.raise_for_status()
             items = response.json()
 
-        yaml_items = [item for item in items if item["name"].endswith(".yaml") or item["name"].endswith(".yml")]
+        yaml_items = [
+            item
+            for item in items
+            if item["name"].endswith(".yaml") or item["name"].endswith(".yml")
+        ]
 
         for item in yaml_items:
             try:
@@ -119,7 +129,9 @@ class GitHubAppClient:
                         resources[name] = doc
                         log.msg("Parsed YAML resource", file=item["name"], name=name)
             except Exception as e:
-                log.exception("Failed to parse YAML file", file=item["name"], error=str(e))
+                log.exception(
+                    "Failed to parse YAML file", file=item["name"], error=str(e)
+                )
 
         return resources
 
