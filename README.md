@@ -91,6 +91,16 @@ source venv/bin/activate  # Windows Git Bash: source venv/Scripts/activate
 pip install -e .
 ```
 
+You can run SynosCD in any of these ways:
+
+```bash
+synos --help
+python -m synoscd --help
+python src/synoscd/cli.py --help
+```
+
+The package is configured for standard installation on Windows, Linux, and macOS.
+
 ### 2) Authenticate Azure
 
 ```bash
@@ -167,9 +177,35 @@ Prune deletes only apps that are:
 
 - `synos operator` — run operator loop
 - `synos sync` — run one reconciliation pass now
+- `synos config` — show active SynosCD configuration
 - `synos bootstrap` — bootstrap/config validation helper
-- `synos diff` — placeholder (planned)
-- `synos status` — placeholder (planned)
+- `synos reconcile source` — Flux-like full reconcile from Git source
+- `synos reconcile app <name>` — Flux-like targeted reconcile for one App
+- `synos get apps [-o table|json|yaml]` — list desired Apps with live health context
+- `synos get source [-o table|json]` — show Git source details + latest commit
+- `synos get status [-o table|json]` — show reconciliation summary
+- `synos status app <name>` — show detailed live status for one app
+- `synos status all` — show detailed live status for all apps
+- `synos logs app <name>` — stream logs for one ACA app
+- `synos logs operator` — stream logs for the SynosCD operator
+
+### Flux-style mapping
+
+- `flux reconcile source git` → `synos reconcile source`
+- `flux reconcile kustomization <name>` → `synos reconcile app <name>`
+- `flux get source git` → `synos get source`
+- `flux get ks` / `flux get hr` → `synos get apps` (App-centric model)
+
+### Resource model
+
+SynosCD is intentionally simpler than Flux.
+
+- Flux uses separate resource types such as `GitRepository`, `Kustomization`, and `HelmRelease`
+- SynosCD uses a single app-centric model
+- Git connectivity is configured on the operator itself
+- The operator pulls manifests directly and reconciles them to Azure Container Apps
+
+Today, the primary Git contract is the `App` manifest. You do not need separate `Source` or `Kustomization` manifests unless SynosCD later grows into a multi-source or multi-tenant platform.
 
 ## Troubleshooting
 

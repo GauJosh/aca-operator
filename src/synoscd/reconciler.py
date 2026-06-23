@@ -57,6 +57,52 @@ class Reconciler:
             log.exception("Reconciliation pass failed", error=str(e))
             raise ReconcileError(str(e))
 
+    async def fetch_desired_state(self) -> Dict[str, Resource]:
+        """Public accessor for desired Git state."""
+        return await self._fetch_desired_state()
+
+    async def fetch_desired_apps(self) -> Dict[str, App]:
+        """Public accessor for desired App resources keyed by resource key."""
+        desired = await self._fetch_desired_state()
+        return {
+            key: resource
+            for key, resource in desired.items()
+            if isinstance(resource, App)
+        }
+
+    async def sync_app(self, app_name: str) -> Dict[str, Any]:
+        """Run reconciliation for a single app by name."""
+        log.msg("Starting targeted reconciliation pass", app_name=app_name)
+
+        try:
+            desired_resources = await self._fetch_desired_state()
+            log.msg("Fetched desired state from GitHub", count=len(desired_resources))
+
+            live_apps = await self.aca.list_apps()
+            log.msg("Fetched live apps from Azure", count=len(live_apps))
+
+            filtered_desired: Dict[str, Resource] = {}
+            for key, resource in desired_resources.items():
+                if isinstance(resource, App) and resource.metadata.name == app_name:
+                    filtered_desired[key] = resource
+
+            if not filtered_desired:
+                raise ReconcileError(
+                    f"App '{app_name}' not found in desired Git state under '{self.config_path}'"
+                )
+
+            filtered_live = [app for app in live_apps if app.get("name") == app_name]
+            results = await self._reconcile_resources(filtered_desired, filtered_live)
+            log.msg("Targeted reconciliation pass complete", app_name=app_name, results=results)
+            return results
+        except Exception as e:
+            log.exception(
+                "Targeted reconciliation pass failed",
+                app_name=app_name,
+                error=str(e),
+            )
+            raise ReconcileError(str(e))
+
     async def _fetch_desired_state(self) -> Dict[str, Resource]:
         """Fetch desired state from GitHub."""
         try:

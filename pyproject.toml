@@ -33,3 +33,12 @@ synos = "synoscd.cli:main"
 [build-system]
 requires = ["setuptools>=65.0"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+synoscd = ["py.typed"]

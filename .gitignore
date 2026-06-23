@@ -49,6 +49,7 @@ htmlcov/
 .env.local
 config.yaml
 config.yml
+*.pem
 
 # Git
 git-cache/

@@ -1,0 +1,1 @@
+"""SynosCD CLI commands."""
