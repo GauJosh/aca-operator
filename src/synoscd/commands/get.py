@@ -8,6 +8,7 @@ from synoscd.logger import setup_logging, get_logger
 from synoscd.commands.common import (
     build_clients,
     parse_csv,
+    fetch_operator_env_map,
     format_table,
     ConfigValidationError,
 )
@@ -31,7 +32,10 @@ def apps(
     
     try:
         config, _, aca_client, reconciler = build_clients(config_path)
-        runtime_suspended = set(parse_csv(config.suspended_apps_csv))
+        live_operator_env = fetch_operator_env_map(config.azure_resource_group)
+        runtime_suspended = set(
+            parse_csv(live_operator_env.get("SYNOSCD_SUSPENDED_APPS_CSV", ""))
+        )
         desired = asyncio.run(reconciler.fetch_desired_state())
         live_list = asyncio.run(aca_client.list_apps())
         live_map = {item.get("name"): item for item in live_list if item.get("name")}

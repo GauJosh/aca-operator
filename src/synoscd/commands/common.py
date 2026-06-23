@@ -3,6 +3,7 @@
 import json
 import os
 import re
+import shlex
 import subprocess
 from typing import Optional, Tuple
 from shutil import which

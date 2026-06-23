@@ -628,10 +628,11 @@ def _update_suspended_apps(
         updated = sorted(current - {app_name})
 
     csv_value = ",".join(updated)
-    typer.echo("Planned update:")
-    typer.echo(
-        f"  {OPERATOR_ENV_KEYS['suspended_apps']}: {current_env.get(OPERATOR_ENV_KEYS['suspended_apps'], '<unset>')} -> {csv_value or '<empty>'}"
-    )
+    action = "suspend" if suspend else "resume"
+    typer.echo(f"Planned update: {action} {app_name}")
+    if current_env.get(OPERATOR_ENV_KEYS["suspended_apps"]):
+        typer.echo(f"  Current suspended apps: {current_env.get(OPERATOR_ENV_KEYS['suspended_apps'])}")
+    typer.echo(f"  New suspended apps: {csv_value or '<empty>'}")
 
     if not yes and not typer.confirm("Apply this change to the operator now?"):
         typer.echo("Cancelled.")
@@ -642,8 +643,8 @@ def _update_suspended_apps(
         operator_app_name,
         {OPERATOR_ENV_KEYS["suspended_apps"]: csv_value},
     )
-    action = "Suspended" if suspend else "Resumed"
-    typer.echo(f"✓ {action} '{app_name}'")
+    action_label = "Suspended" if suspend else "Resumed"
+    typer.echo(f"✓ {action_label} '{app_name}'")
 
 
 @app.command(
