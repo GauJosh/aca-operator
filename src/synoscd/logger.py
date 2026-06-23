@@ -2,14 +2,25 @@
 # Structured logging with structlog
 
 import logging
+import os
 import structlog
 from typing import Optional
 
 
-def setup_logging(log_level: str = "INFO", structured: bool = True):
+def setup_logging(log_level: Optional[str] = None, structured: bool = True):
     """Initialize structured logging."""
-    level = getattr(logging, log_level.upper(), logging.INFO)
+    effective_log_level = log_level or os.getenv("SYNOSCD_LOG_LEVEL", "WARNING")
+    level = getattr(logging, effective_log_level.upper(), logging.WARNING)
     logging.basicConfig(level=level, force=True)
+
+    # Reduce third-party log noise unless debugging explicitly.
+    if level > logging.DEBUG:
+        logging.getLogger("azure").setLevel(logging.WARNING)
+        logging.getLogger("azure.identity").setLevel(logging.WARNING)
+        logging.getLogger("azure.core.pipeline.policies.http_logging_policy").setLevel(
+            logging.WARNING
+        )
+        logging.getLogger("httpx").setLevel(logging.WARNING)
 
     if structured:
         structlog.configure(

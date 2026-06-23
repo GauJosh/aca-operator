@@ -125,6 +125,65 @@ export SYNOSCD_RECONCILE_INTERVAL_SECONDS=30
 synos operator
 ```
 
+### 3b) One-command auto bootstrap from Key Vault
+
+If your GitHub App secrets are in Key Vault (for example `synoscd-vault`), you can auto-load everything with one command:
+
+```bash
+python scripts/bootstrap_env.py --run synos get apps
+```
+
+This is the recommended UX (cross-platform): no `source`, no `eval`, no subshell confusion.
+
+Other examples:
+
+```bash
+python scripts/bootstrap_env.py --run synos config
+python scripts/bootstrap_env.py --run synos get source
+python scripts/bootstrap_env.py --run synos get apps
+```
+
+You can also generate shell exports if needed:
+
+```bash
+python scripts/bootstrap_env.py --print-exports
+```
+
+This script auto-detects subscription, resource group, ACE, and loads GitHub App secrets from AKV:
+
+- `github-app-id`
+- `github-app-installation-id`
+- `github-app-private-key`
+
+Optional overrides:
+
+```bash
+python scripts/bootstrap_env.py \
+  --vault-name synoscd-vault \
+  --rg-hint synoscd-dev \
+  --ace-hint <ace-name> \
+  --config-repo-url https://github.com/<owner>/<repo>.git \
+  --run synos get source
+```
+
+Convenience wrappers:
+
+```bash
+# Git Bash / Linux / macOS
+./scripts/synos-env.sh get apps
+
+# PowerShell
+./scripts/synos-env.ps1 get apps
+```
+
+After it runs:
+
+```bash
+python scripts/bootstrap_env.py --run synos config
+python scripts/bootstrap_env.py --run synos get source
+python scripts/bootstrap_env.py --run synos get apps
+```
+
 ## Deploy Operator to ACA (Podman + ACR)
 
 ```bash

@@ -5,7 +5,12 @@ import json
 import typer
 from typing import Optional
 from synoscd.logger import setup_logging, get_logger
-from synoscd.commands.common import build_clients, format_table
+from synoscd.commands.common import (
+    build_clients,
+    parse_csv,
+    format_table,
+    ConfigValidationError,
+)
 
 log = get_logger(__name__)
 app = typer.Typer(help="View SynosCD and source state (like 'flux get')")
@@ -16,11 +21,17 @@ def apps(
     output: str = typer.Option("table", "--output", "-o", help="Output format: table, json, yaml"),
     config_path: Optional[str] = typer.Option(None, help="Path to config file"),
 ):
-    """List applications (like 'flux get ks' for Kustomizations)."""
+    """List applications (like 'flux get ks' for Kustomizations).
+
+    Examples:
+      synos get apps
+      synos get apps -o yaml
+    """
     setup_logging()
     
     try:
-        _, _, aca_client, reconciler = build_clients(config_path)
+        config, _, aca_client, reconciler = build_clients(config_path)
+        runtime_suspended = set(parse_csv(config.suspended_apps_csv))
         desired = asyncio.run(reconciler.fetch_desired_state())
         live_list = asyncio.run(aca_client.list_apps())
         live_map = {item.get("name"): item for item in live_list if item.get("name")}
@@ -31,7 +42,8 @@ def apps(
                 continue
             
             app_name = resource.metadata.name
-            suspended = resource.spec.suspend if hasattr(resource.spec, 'suspend') else False
+            desired_suspended = resource.spec.suspend if hasattr(resource.spec, 'suspend') else False
+            suspended = bool(desired_suspended or app_name in runtime_suspended)
             managed = (
                 bool(resource.metadata.labels)
                 and resource.metadata.labels.get("synoscd.io/managed") == "true"
@@ -80,6 +92,9 @@ def apps(
             ]
             typer.echo(format_table(headers, table_rows))
             
+    except ConfigValidationError as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=2)
     except Exception as e:
         log.exception("Failed to get apps", error=str(e))
         raise typer.Exit(code=1)
@@ -87,10 +102,15 @@ def apps(
 
 @app.command()
 def source(
-    output: str = typer.Option("table", "--output", "-o", help="Output format: table, json"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format: table, json, yaml"),
     config_path: Optional[str] = typer.Option(None, help="Path to config file"),
 ):
-    """Show Git source configuration (like 'flux get source git')."""
+    """Show Git source configuration (like 'flux get source git').
+
+    Examples:
+        synos get source
+        synos get source -o yaml
+"""
     setup_logging()
     
     try:
@@ -109,6 +129,10 @@ def source(
         
         if output == "json":
             typer.echo(json.dumps(data, indent=2))
+        elif output == "yaml":
+            import yaml
+
+            typer.echo(yaml.dump(data, default_flow_style=False, sort_keys=False))
         else:  # table
             headers = ["TYPE", "OWNER/REPO", "PATH", "REF", "LATEST_COMMIT", "URL"]
             rows = [[
@@ -121,6 +145,9 @@ def source(
             ]]
             typer.echo(format_table(headers, rows))
             
+    except ConfigValidationError as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=2)
     except Exception as e:
         log.exception("Failed to get source", error=str(e))
         raise typer.Exit(code=1)
@@ -128,10 +155,15 @@ def source(
 
 @app.command("status")
 def get_status(
-    output: str = typer.Option("table", "--output", "-o", help="Output format: table, json"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format: table, json, yaml"),
     config_path: Optional[str] = typer.Option(None, help="Path to config file"),
 ):
-    """Show SynosCD summary status (similar to Flux get views)."""
+    """Show SynosCD summary status (similar to Flux get views).
+
+        Examples:
+            synos get status
+            synos get status -o yaml
+    """
     setup_logging()
     
     try:
@@ -163,6 +195,10 @@ def get_status(
         
         if output == "json":
             typer.echo(json.dumps(data, indent=2))
+        elif output == "yaml":
+            import yaml
+
+            typer.echo(yaml.dump(data, default_flow_style=False, sort_keys=False))
         else:  # table
             typer.echo("\nSynosCD Status Summary:")
             typer.echo(f"  Desired Apps:    {data['desired_apps']}")
@@ -172,6 +208,9 @@ def get_status(
             typer.echo(f"  Prune Enabled:   {'Yes' if data['prune_enabled'] else 'No'}")
             typer.echo(f"  Protected Apps:  {data['protected_apps']}")
             
+    except ConfigValidationError as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=2)
     except Exception as e:
         log.exception("Failed to get summary", error=str(e))
         raise typer.Exit(code=1)

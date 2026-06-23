@@ -30,6 +30,7 @@ class SynoscdConfig(BaseSettings):
     managed_tag_key: str = "synoscd-managed"
     managed_tag_value: str = "true"
     protected_apps_csv: str = "synoscd-operator"
+    suspended_apps_csv: str = ""
 
     # Logging
     log_level: str = "INFO"

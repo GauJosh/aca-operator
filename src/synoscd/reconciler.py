@@ -27,12 +27,14 @@ class Reconciler:
         config_path: str = "apps",
         prune_enabled: bool = False,
         protected_apps: Optional[List[str]] = None,
+        suspended_apps: Optional[List[str]] = None,
     ):
         self.github = github
         self.aca = aca
         self.config_path = config_path
         self.prune_enabled = prune_enabled
         self.protected_apps = set(protected_apps or [])
+        self.suspended_apps = set(suspended_apps or [])
 
     async def sync_once(self) -> Dict[str, Any]:
         """Run a single reconciliation pass."""
@@ -197,6 +199,10 @@ class Reconciler:
         """Reconcile a single App resource."""
         if app.spec.suspend:
             log.msg("App is suspended, skipping", app_name=app.metadata.name)
+            return
+
+        if app.metadata.name in self.suspended_apps:
+            log.msg("App is runtime-suspended, skipping", app_name=app.metadata.name)
             return
 
         # Check if app should be managed by SynosCD

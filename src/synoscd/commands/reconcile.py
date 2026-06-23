@@ -4,7 +4,7 @@ import asyncio
 import typer
 from typing import Optional
 from synoscd.logger import setup_logging, get_logger
-from synoscd.commands.common import build_clients
+from synoscd.commands.common import build_clients, ConfigValidationError
 
 log = get_logger(__name__)
 app = typer.Typer(help="Control reconciliation behavior")
@@ -53,6 +53,9 @@ def reconcile_source(
     except KeyboardInterrupt as exc:
         typer.echo("\nReconciliation stopped")
         raise typer.Exit(code=0) from exc
+    except ConfigValidationError as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=2)
     except Exception as e:
         log.exception("Reconciliation failed", error=str(e))
         raise typer.Exit(code=1)
@@ -77,6 +80,9 @@ def reconcile_app(
             typer.echo(f"  Error: {result['error']}")
             raise typer.Exit(code=1)
             
+    except ConfigValidationError as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=2)
     except Exception as e:
         log.exception("App reconciliation failed", app_name=name, error=str(e))
         raise typer.Exit(code=1)

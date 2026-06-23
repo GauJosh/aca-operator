@@ -5,7 +5,11 @@ import json
 import typer
 from typing import Optional
 from synoscd.logger import setup_logging, get_logger
-from synoscd.commands.common import build_clients, format_table
+from synoscd.commands.common import (
+    build_clients,
+    format_table,
+    ConfigValidationError,
+)
 
 log = get_logger(__name__)
 app = typer.Typer(help="Detailed app status")
@@ -14,12 +18,18 @@ app = typer.Typer(help="Detailed app status")
 @app.command("app")
 def show_app(
     name: str = typer.Argument(..., help="App name"),
-    output: str = typer.Option("table", "--output", "-o", help="Output format: table, json"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format: table, json, yaml"),
     config_path: Optional[str] = typer.Option(None, help="Path to config file"),
     watch: bool = typer.Option(False, "--watch", "-w", help="Refresh continuously"),
     interval: int = typer.Option(5, "--interval", help="Refresh interval in seconds"),
 ):
-    """Show detailed status for a specific app."""
+    """Show detailed status for a specific app.
+
+    Examples:
+      synos status app demo-app
+      synos status app demo-app -o yaml
+      synos status app demo-app --watch
+    """
     setup_logging()
     
     try:
@@ -55,6 +65,10 @@ def show_app(
 
             if output == "json":
                 typer.echo(json.dumps(data, indent=2))
+            elif output == "yaml":
+                import yaml
+
+                typer.echo(yaml.dump(data, default_flow_style=False, sort_keys=False))
             else:  # table
                 typer.echo(f"\n📦 App Status: {name}\n")
                 typer.echo(f"  Status:                {data['status']}")
@@ -83,6 +97,9 @@ def show_app(
 
     except KeyboardInterrupt as exc:
         raise typer.Exit(code=0) from exc
+    except ConfigValidationError as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=2)
     except Exception as e:
         log.exception("Failed to get app status", app_name=name, error=str(e))
         raise typer.Exit(code=1)
@@ -90,12 +107,18 @@ def show_app(
 
 @app.command("all")
 def show_all_statuses(
-    output: str = typer.Option("table", "--output", "-o", help="Output format: table, json"),
+    output: str = typer.Option("table", "--output", "-o", help="Output format: table, json, yaml"),
     config_path: Optional[str] = typer.Option(None, help="Path to config file"),
     watch: bool = typer.Option(False, "--watch", "-w", help="Refresh continuously"),
     interval: int = typer.Option(5, "--interval", help="Refresh interval in seconds"),
 ):
-    """Show status for all apps."""
+    """Show status for all apps.
+
+    Examples:
+      synos status all
+      synos status all -o yaml
+      synos status all --watch
+    """
     setup_logging()
     
     try:
@@ -122,6 +145,10 @@ def show_all_statuses(
 
             if output == "json":
                 typer.echo(json.dumps(rows, indent=2))
+            elif output == "yaml":
+                import yaml
+
+                typer.echo(yaml.dump(rows, default_flow_style=False, sort_keys=False))
             else:  # table
                 if not rows:
                     typer.echo("No apps found")
@@ -149,6 +176,9 @@ def show_all_statuses(
 
     except KeyboardInterrupt as exc:
         raise typer.Exit(code=0) from exc
+    except ConfigValidationError as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=2)
     except Exception as e:
         log.exception("Failed to get all app statuses", error=str(e))
         raise typer.Exit(code=1)

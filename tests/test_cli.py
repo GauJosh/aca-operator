@@ -41,6 +41,10 @@ def test_cli_help_contains_status_logs_and_config_commands():
     assert "status" in result.stdout
     assert "logs" in result.stdout
     assert "config" in result.stdout
+    assert "describe" in result.stdout
+    assert "set" in result.stdout
+    assert "suspend" in result.stdout
+    assert "resume" in result.stdout
 
 
 def test_status_help_contains_app_and_all_commands():
@@ -55,3 +59,26 @@ def test_logs_help_contains_app_and_operator_commands():
     assert result.exit_code == 0
     assert "app" in result.stdout
     assert "operator" in result.stdout
+
+
+def test_describe_help_is_available():
+    result = runner.invoke(app, ["describe", "--help"])
+    assert result.exit_code == 0
+    assert "alias for 'status app'" in result.stdout
+    assert "yaml" in result.stdout
+
+
+def test_set_help_contains_supported_flags():
+    result = runner.invoke(app, ["set", "--help"])
+    assert result.exit_code == 0
+    assert "--interval" in result.stdout
+    assert "--prune" in result.stdout
+    assert "--protected-apps" in result.stdout
+    assert "--max-concurrent" in result.stdout
+
+
+def test_cli_help_contains_global_logging_flags():
+    result = runner.invoke(app, ["--help"])
+    assert result.exit_code == 0
+    assert "--verbose" in result.stdout
+    assert "--debug" in result.stdout
