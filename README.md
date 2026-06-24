@@ -101,6 +101,64 @@ python src/synoscd/cli.py --help
 
 The package is configured for standard installation on Windows, Linux, and macOS.
 
+## Install / Download
+
+### Recommended: pipx or pip install
+
+The easiest way to use SynosCD is from a published release:
+
+```bash
+pipx install synoscd
+# or
+pip install synoscd
+```
+
+### GitHub Release downloads
+
+Each tagged release publishes:
+- `synoscd-<version>.tar.gz` source distribution
+- `synoscd-<version>-py3-none-any.whl` wheel
+- Standalone `synos` binaries for Linux, macOS, and Windows
+
+Use the standalone binary if you want a direct download and run experience.
+
+#### Direct-run prerequisites
+
+The standalone binaries still require configuration at runtime:
+- Azure credentials or managed identity access
+- SynosCD environment variables set
+- Access to the GitHub App private key / Key Vault secret source
+
+Example:
+
+```bash
+export SYNOSCD_GITHUB_APP_ID=<app-id>
+export SYNOSCD_GITHUB_APP_PRIVATE_KEY="$(cat private-key.pem)"
+export SYNOSCD_GITHUB_APP_INSTALLATION_ID=<installation-id>
+export SYNOSCD_GITHUB_REPO_OWNER=<owner>
+export SYNOSCD_GITHUB_REPO_NAME=<repo>
+export SYNOSCD_AZURE_SUBSCRIPTION_ID=<sub-id>
+export SYNOSCD_AZURE_RESOURCE_GROUP=<resource-group>
+export SYNOSCD_AZURE_CONTAINER_APP_ENVIRONMENT=<ace-name>
+
+synos get apps
+```
+
+On Windows PowerShell:
+
+```powershell
+$env:SYNOSCD_GITHUB_APP_ID = '<app-id>'
+$env:SYNOSCD_GITHUB_APP_PRIVATE_KEY = Get-Content .\private-key.pem -Raw
+$env:SYNOSCD_GITHUB_APP_INSTALLATION_ID = '<installation-id>'
+$env:SYNOSCD_GITHUB_REPO_OWNER = '<owner>'
+$env:SYNOSCD_GITHUB_REPO_NAME = '<repo>'
+$env:SYNOSCD_AZURE_SUBSCRIPTION_ID = '<sub-id>'
+$env:SYNOSCD_AZURE_RESOURCE_GROUP = '<resource-group>'
+$env:SYNOSCD_AZURE_CONTAINER_APP_ENVIRONMENT = '<ace-name>'
+
+synos get apps
+```
+
 ### 2) Authenticate Azure
 
 ```bash
@@ -247,6 +305,23 @@ Prune deletes only apps that are:
 - `synos status all` — show detailed live status for all apps
 - `synos logs app <name>` — stream logs for one ACA app
 - `synos logs operator` — stream logs for the SynosCD operator
+
+## Release / Distribution Strategy
+
+SynosCD publishes multiple distribution formats from GitHub Releases:
+
+| Format | Best for |
+| --- | --- |
+| Source tarball (`.tar.gz`) | Contributors and source installs |
+| Wheel (`.whl`) | Standard Python installs and pip mirrors |
+| Standalone binary (`synos` / `synos.exe`) | Direct download and run with env vars already configured |
+
+Recommended usage:
+1. **Most users**: `pipx install synoscd`
+2. **Python environments**: `pip install synoscd`
+3. **No-Python client machines**: download the standalone release binary
+
+If you use a standalone binary, you still need to set the same SynosCD env vars before running the CLI.
 
 ### Flux-style mapping
 

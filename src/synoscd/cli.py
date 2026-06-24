@@ -421,9 +421,9 @@ def diff(
                 continue
 
             desired_spec = resource.spec.model_dump(by_alias=True, exclude_none=True)
-            desired_norm = aca_client._normalize_desired(desired_spec)
+            desired_norm = aca_client.normalize_desired(desired_spec)
             live = live_map.get(name)
-            live_norm = aca_client._normalize_live(live) if live else None
+            live_norm = aca_client.normalize_live(live) if live else None
 
             if not live:
                 rows.append(

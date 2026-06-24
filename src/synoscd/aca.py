@@ -162,6 +162,11 @@ class ACAClient:
         }
 
     @staticmethod
+    def normalize_desired(spec: Dict[str, Any]) -> Dict[str, Any]:
+        """Public wrapper for normalizing desired app spec."""
+        return ACAClient._normalize_desired(spec)
+
+    @staticmethod
     def _validate_resources(spec: Dict[str, Any]) -> None:
         allowed_memory_by_cpu = {
             0.25: {"0.5Gi"},
@@ -233,6 +238,11 @@ class ACAClient:
                 "maxReplicas": int(scale.get("maxReplicas", 10)),
             },
         }
+
+    @staticmethod
+    def normalize_live(app: Dict[str, Any]) -> Dict[str, Any]:
+        """Public wrapper for normalizing live ACA app state."""
+        return ACAClient._normalize_live(app)
 
     async def needs_update(
         self, desired_spec: Dict[str, Any], live_app: Optional[Dict[str, Any]]
