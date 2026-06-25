@@ -2,7 +2,6 @@ from typer.testing import CliRunner
 
 from synoscd.cli import app
 
-
 runner = CliRunner()
 
 

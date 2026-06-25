@@ -78,7 +78,9 @@ def _resolve_az() -> str:
     return "az"
 
 
-def _run_command(cmd: list[str], capture_output: bool = True) -> subprocess.CompletedProcess:
+def _run_command(
+    cmd: list[str], capture_output: bool = True
+) -> subprocess.CompletedProcess:
     try:
         return subprocess.run(
             cmd,
@@ -103,7 +105,9 @@ def _run_command(cmd: list[str], capture_output: bool = True) -> subprocess.Comp
         )
 
 
-def fetch_operator_env_map(resource_group: str, operator_app_name: str = "synoscd-operator") -> dict[str, str]:
+def fetch_operator_env_map(
+    resource_group: str, operator_app_name: str = "synoscd-operator"
+) -> dict[str, str]:
     """Fetch live environment variables from the operator Container App."""
     az = _resolve_az()
     result = _run_command(
@@ -176,20 +180,22 @@ def format_table(headers: list[str], rows: list[list[str]]) -> str:
     """Format data as a text table."""
     if not rows:
         return "No results"
-    
+
     # Calculate column widths
     col_widths = [len(h) for h in headers]
     for row in rows:
         for i, cell in enumerate(row):
             col_widths[i] = max(col_widths[i], len(str(cell)))
-    
+
     # Build table
     lines = []
     header_row = "  ".join(h.ljust(col_widths[i]) for i, h in enumerate(headers))
     lines.append(header_row)
     lines.append("  ".join("-" * w for w in col_widths))
-    
+
     for row in rows:
-        lines.append("  ".join(str(cell).ljust(col_widths[i]) for i, cell in enumerate(row)))
-    
+        lines.append(
+            "  ".join(str(cell).ljust(col_widths[i]) for i, cell in enumerate(row))
+        )
+
     return "\n".join(lines)

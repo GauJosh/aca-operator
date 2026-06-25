@@ -18,7 +18,9 @@ app = typer.Typer(help="Detailed app status")
 @app.command("app")
 def show_app(
     name: str = typer.Argument(..., help="App name"),
-    output: str = typer.Option("table", "--output", "-o", help="Output format: table, json, yaml"),
+    output: str = typer.Option(
+        "table", "--output", "-o", help="Output format: table, json, yaml"
+    ),
     config_path: Optional[str] = typer.Option(None, help="Path to config file"),
     watch: bool = typer.Option(False, "--watch", "-w", help="Refresh continuously"),
     interval: int = typer.Option(5, "--interval", help="Refresh interval in seconds"),
@@ -31,7 +33,7 @@ def show_app(
       synos status app demo-app --watch
     """
     setup_logging()
-    
+
     try:
         _, _, aca_client, _ = build_clients(config_path)
 
@@ -46,12 +48,15 @@ def show_app(
             data = {
                 "name": live_app.get("name", "-"),
                 "location": live_app.get("location", "-"),
-                "status": "✓ Active" if props.get("latestReadyRevisionName") else "✗ Inactive",
+                "status": (
+                    "✓ Active" if props.get("latestReadyRevisionName") else "✗ Inactive"
+                ),
                 "provisioning_state": props.get("provisioningState", "Unknown"),
                 "latest_ready_revision": props.get("latestReadyRevisionName", "-"),
                 "running_status": props.get("runningStatus", "-"),
                 "replicas": props.get("replicas", "-"),
-                "outbound_ip_addresses": ", ".join(props.get("outboundIpAddresses", [])) or "-",
+                "outbound_ip_addresses": ", ".join(props.get("outboundIpAddresses", []))
+                or "-",
             }
 
             # Get error details if provisioning failed
@@ -107,7 +112,9 @@ def show_app(
 
 @app.command("all")
 def show_all_statuses(
-    output: str = typer.Option("table", "--output", "-o", help="Output format: table, json, yaml"),
+    output: str = typer.Option(
+        "table", "--output", "-o", help="Output format: table, json, yaml"
+    ),
     config_path: Optional[str] = typer.Option(None, help="Path to config file"),
     watch: bool = typer.Option(False, "--watch", "-w", help="Refresh continuously"),
     interval: int = typer.Option(5, "--interval", help="Refresh interval in seconds"),
@@ -120,7 +127,7 @@ def show_all_statuses(
       synos status all --watch
     """
     setup_logging()
-    
+
     try:
         _, _, aca_client, _ = build_clients(config_path)
 
@@ -135,13 +142,15 @@ def show_all_statuses(
                 status_icon = "✓" if provisioning == "Succeeded" and ready_rev else "✗"
                 running = props.get("runningStatus", "-")
 
-                rows.append({
-                    "status": status_icon,
-                    "name": live_app.get("name", "-"),
-                    "provisioning": provisioning,
-                    "status_detail": running,
-                    "ready_revision": ready_rev or "-",
-                })
+                rows.append(
+                    {
+                        "status": status_icon,
+                        "name": live_app.get("name", "-"),
+                        "provisioning": provisioning,
+                        "status_detail": running,
+                        "ready_revision": ready_rev or "-",
+                    }
+                )
 
             if output == "json":
                 typer.echo(json.dumps(rows, indent=2))
@@ -154,7 +163,13 @@ def show_all_statuses(
                     typer.echo("No apps found")
                     return
 
-                headers = ["STATUS", "NAME", "PROVISIONING", "STATUS_DETAIL", "READY_REV"]
+                headers = [
+                    "STATUS",
+                    "NAME",
+                    "PROVISIONING",
+                    "STATUS_DETAIL",
+                    "READY_REV",
+                ]
                 table_rows = [
                     [
                         row["status"],

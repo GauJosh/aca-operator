@@ -39,7 +39,9 @@ OPERATOR_ENV_KEYS = {
 
 # Add command groups
 app.add_typer(reconcile.app, name="reconcile", help="Control reconciliation")
-app.add_typer(get.app, name="get", help="View SynosCD and source state (like 'flux get')")
+app.add_typer(
+    get.app, name="get", help="View SynosCD and source state (like 'flux get')"
+)
 app.add_typer(status.app, name="status", help="Detailed app status")
 app.add_typer(logs.app, name="logs", help="Stream logs from apps/operator")
 
@@ -79,7 +81,9 @@ def _deep_diff(desired: Any, live: Any, path: str = "") -> list[dict[str, Any]]:
 
     if isinstance(desired, list) and isinstance(live, list):
         if desired != live:
-            differences.append({"path": path or "root", "desired": desired, "live": live})
+            differences.append(
+                {"path": path or "root", "desired": desired, "live": live}
+            )
         return differences
 
     if desired != live:
@@ -109,7 +113,9 @@ def _resolve_az() -> str:
     return "az"
 
 
-def _run_command(cmd: list[str], capture_output: bool = True) -> subprocess.CompletedProcess:
+def _run_command(
+    cmd: list[str], capture_output: bool = True
+) -> subprocess.CompletedProcess:
     try:
         return subprocess.run(
             cmd,
@@ -172,7 +178,9 @@ def _detect_operator_rg(operator_app_name: str, rg_hint: Optional[str]) -> str:
     )
 
 
-def _fetch_operator_env_map(resource_group: str, operator_app_name: str) -> dict[str, str]:
+def _fetch_operator_env_map(
+    resource_group: str, operator_app_name: str
+) -> dict[str, str]:
     az = _resolve_az()
     env_data = _run_json(
         [
@@ -242,7 +250,7 @@ def _print_operator_settings(env_map: dict[str, str]) -> None:
 
 
 @app.command(
-        help="""Bootstrap SynosCD operator configuration.
+    help="""Bootstrap SynosCD operator configuration.
 
 Examples:
     synos bootstrap --github-app-id 123 --github-app-private-key ./key.pem --github-app-installation-id 456 \
@@ -270,7 +278,7 @@ def bootstrap(
     """
     setup_logging()
     typer.echo("🚀 SynosCD Bootstrap\n")
-    
+
     log.msg(
         "Bootstrap started",
         github_app_id=github_app_id,
@@ -281,7 +289,7 @@ def bootstrap(
         azure_subscription_id=azure_subscription_id,
         has_private_key=bool(github_app_private_key),
     )
-    
+
     typer.echo("✓ Configuration validated")
     typer.echo(f"  GitHub Repo:     {github_repo}")
     typer.echo(f"  Azure RG:        {azure_resource_group}")
@@ -293,7 +301,7 @@ def bootstrap(
 
 
 @app.command(
-        help="""Run the SynosCD operator loop (reconciler daemon).
+    help="""Run the SynosCD operator loop (reconciler daemon).
 
     Examples:
         synos operator
@@ -303,21 +311,28 @@ def bootstrap(
 )
 def operator(
     config_path: Optional[str] = typer.Option(None, help="Path to config file"),
-    interval: Optional[int] = typer.Option(None, "--interval", help="Override reconciliation interval (seconds)"),
-    log_level: Optional[str] = typer.Option(None, "--log-level", help="Log level: debug, info, warning, error"),
+    interval: Optional[int] = typer.Option(
+        None, "--interval", help="Override reconciliation interval (seconds)"
+    ),
+    log_level: Optional[str] = typer.Option(
+        None, "--log-level", help="Log level: debug, info, warning, error"
+    ),
 ):
     setup_logging(log_level)
     typer.echo("🚀 Starting SynosCD operator\n")
-    log.msg("Starting SynosCD operator", log_level=(log_level or os.getenv("SYNOSCD_LOG_LEVEL", "WARNING")))
+    log.msg(
+        "Starting SynosCD operator",
+        log_level=(log_level or os.getenv("SYNOSCD_LOG_LEVEL", "WARNING")),
+    )
 
     try:
         config_obj, _, _, reconciler = build_clients(config_path)
-        
+
         # Override interval if provided
         interval_seconds = interval or config_obj.reconcile_interval_seconds
         typer.echo(f"⏱️  Reconciliation interval: {interval_seconds}s")
         typer.echo("💚 Operator running (Ctrl+C to stop)\n")
-        
+
         operator_loop = OperatorLoop(
             reconciler,
             interval_seconds=interval_seconds,
@@ -325,7 +340,7 @@ def operator(
         )
 
         asyncio.run(operator_loop.start())
-        
+
     except KeyboardInterrupt as exc:
         typer.echo("\n✋ Operator stopped")
         raise typer.Exit(code=0) from exc
@@ -339,7 +354,7 @@ def operator(
 
 
 @app.command(
-        help="""Force a reconciliation pass now (one-shot sync).
+    help="""Force a reconciliation pass now (one-shot sync).
 
 Examples:
     synos sync
@@ -348,7 +363,9 @@ Examples:
 )
 def sync(
     config_path: Optional[str] = typer.Option(None, help="Path to config file"),
-    dry_run: bool = typer.Option(False, "--dry-run", help="Show what would be synced without applying"),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Show what would be synced without applying"
+    ),
 ):
     setup_logging()
     typer.echo("🔄 Forcing reconciliation sync\n")
@@ -356,28 +373,28 @@ def sync(
 
     try:
         _, _, _, reconciler = build_clients(config_path)
-        
+
         if dry_run:
             typer.echo("📋 Dry-run mode: showing what would be synced\n")
-        
+
         result = asyncio.run(reconciler.sync_once())
-        
+
         synced_count = len(result.get("synced", []))
         failed_count = len(result.get("failed", []))
         pruned_count = len(result.get("pruned", []))
-        
+
         status_icon = "✓" if not result.get("failed") else "✗"
         typer.echo(f"\n{status_icon} Sync complete")
         typer.echo(f"  Synced: {synced_count}")
         typer.echo(f"  Failed: {failed_count}")
         typer.echo(f"  Pruned: {pruned_count}")
-        
+
         if result.get("failed"):
             typer.echo("\n  Failed apps:")
             for app_name, error in result["failed"].items():
                 typer.echo(f"    - {app_name}: {error}")
             raise typer.Exit(code=1)
-            
+
     except ConfigValidationError as e:
         typer.echo(str(e), err=True)
         raise typer.Exit(code=2)
@@ -388,7 +405,7 @@ def sync(
 
 
 @app.command(
-        help="""Show desired vs live state differences for Apps.
+    help="""Show desired vs live state differences for Apps.
 
 Examples:
     synos diff
@@ -397,7 +414,9 @@ Examples:
 """,
 )
 def diff(
-    app_name: Optional[str] = typer.Option(None, "--app", help="Show diff for one app only"),
+    app_name: Optional[str] = typer.Option(
+        None, "--app", help="Show diff for one app only"
+    ),
     output: str = typer.Option("table", "--output", "-o", help="table|json|yaml"),
     config_path: Optional[str] = typer.Option(None, help="Path to config file"),
 ):
@@ -430,14 +449,22 @@ def diff(
                     {
                         "name": name,
                         "status": "missing",
-                        "managed": bool(resource.metadata.labels and resource.metadata.labels.get("synoscd.io/managed") == "true"),
-                        "changes": [{"path": "root", "desired": desired_norm, "live": None}],
+                        "managed": bool(
+                            resource.metadata.labels
+                            and resource.metadata.labels.get("synoscd.io/managed")
+                            == "true"
+                        ),
+                        "changes": [
+                            {"path": "root", "desired": desired_norm, "live": None}
+                        ],
                     }
                 )
                 continue
 
             changes = _deep_diff(desired_norm, live_norm)
-            provisioning_state = (live.get("properties", {}).get("provisioningState") or "unknown").lower()
+            provisioning_state = (
+                live.get("properties", {}).get("provisioningState") or "unknown"
+            ).lower()
             latest_ready = live.get("properties", {}).get("latestReadyRevisionName")
             status_text = "in-sync"
             if provisioning_state != "succeeded" or not latest_ready:
@@ -449,7 +476,10 @@ def diff(
                 {
                     "name": name,
                     "status": status_text,
-                    "managed": bool(resource.metadata.labels and resource.metadata.labels.get("synoscd.io/managed") == "true"),
+                    "managed": bool(
+                        resource.metadata.labels
+                        and resource.metadata.labels.get("synoscd.io/managed") == "true"
+                    ),
                     "changes": changes,
                 }
             )
@@ -486,7 +516,7 @@ def diff(
 
 
 @app.command(
-        help="""Show current configuration.
+    help="""Show current configuration.
 
 Examples:
     synos config
@@ -497,28 +527,28 @@ def config(
 ):
     setup_logging()
     typer.echo("⚙️  SynosCD Configuration\n")
-    
+
     try:
         config_obj, _, _, _ = build_clients(config_path)
-        
+
         typer.echo("GitHub Configuration:")
         typer.echo(f"  App ID:           {config_obj.github_app_id}")
         typer.echo(f"  Repo Owner:       {config_obj.github_repo_owner}")
         typer.echo(f"  Repo Name:        {config_obj.github_repo_name}")
         typer.echo(f"  Config Path:      {config_obj.github_config_path}")
-        
+
         typer.echo("\nAzure Configuration:")
         typer.echo(f"  Subscription ID:  {config_obj.azure_subscription_id[:8]}...")
         typer.echo(f"  Resource Group:   {config_obj.azure_resource_group}")
         typer.echo(f"  ACE Name:         {config_obj.azure_container_app_environment}")
-        
+
         typer.echo("\nReconciliation Settings:")
         typer.echo(f"  Interval:         {config_obj.reconcile_interval_seconds}s")
         typer.echo(f"  Max Concurrent:   {config_obj.max_concurrent_reconciles}")
         typer.echo(f"  Prune Enabled:    {'Yes' if config_obj.prune_enabled else 'No'}")
         typer.echo(f"  Protected Apps:   {config_obj.protected_apps_csv}")
         typer.echo(f"  Suspended Apps:   {config_obj.suspended_apps_csv or '-'}")
-        
+
     except ConfigValidationError as e:
         typer.echo(str(e), err=True)
         raise typer.Exit(code=2)
@@ -528,8 +558,8 @@ def config(
 
 
 @app.command(
-        "set",
-        help="""Update operator runtime settings (interval/prune/protected/max-concurrent).
+    "set",
+    help="""Update operator runtime settings (interval/prune/protected/max-concurrent).
 
 Examples:
     synos set --show
@@ -539,14 +569,28 @@ Examples:
 """,
 )
 def set_operator_settings(
-    interval: Optional[int] = typer.Option(None, "--interval", help="Set reconciliation interval in seconds"),
-    prune: Optional[bool] = typer.Option(None, "--prune/--no-prune", help="Enable or disable prune"),
-    protected_apps: Optional[str] = typer.Option(None, "--protected-apps", help="Comma-separated protected app names"),
-    max_concurrent: Optional[int] = typer.Option(None, "--max-concurrent", help="Max concurrent reconciles"),
-    operator_app_name: str = typer.Option("synoscd-operator", "--operator-app-name", help="Operator ACA app name"),
-    resource_group: Optional[str] = typer.Option(None, "--resource-group", help="Operator resource group"),
+    interval: Optional[int] = typer.Option(
+        None, "--interval", help="Set reconciliation interval in seconds"
+    ),
+    prune: Optional[bool] = typer.Option(
+        None, "--prune/--no-prune", help="Enable or disable prune"
+    ),
+    protected_apps: Optional[str] = typer.Option(
+        None, "--protected-apps", help="Comma-separated protected app names"
+    ),
+    max_concurrent: Optional[int] = typer.Option(
+        None, "--max-concurrent", help="Max concurrent reconciles"
+    ),
+    operator_app_name: str = typer.Option(
+        "synoscd-operator", "--operator-app-name", help="Operator ACA app name"
+    ),
+    resource_group: Optional[str] = typer.Option(
+        None, "--resource-group", help="Operator resource group"
+    ),
     show: bool = typer.Option(False, "--show", help="Show current operator settings"),
-    yes: bool = typer.Option(False, "--yes", "-y", help="Apply without interactive confirmation"),
+    yes: bool = typer.Option(
+        False, "--yes", "-y", help="Apply without interactive confirmation"
+    ),
 ):
     setup_logging()
 
@@ -576,7 +620,10 @@ def set_operator_settings(
             updates[OPERATOR_ENV_KEYS["max_concurrent"]] = str(max_concurrent)
 
         if not updates:
-            typer.echo("No changes requested. Use --show or provide one of --interval/--prune/--protected-apps/--max-concurrent.", err=True)
+            typer.echo(
+                "No changes requested. Use --show or provide one of --interval/--prune/--protected-apps/--max-concurrent.",
+                err=True,
+            )
             raise typer.Exit(code=2)
 
         typer.echo("Planned updates:")
@@ -631,7 +678,9 @@ def _update_suspended_apps(
     action = "suspend" if suspend else "resume"
     typer.echo(f"Planned update: {action} {app_name}")
     if current_env.get(OPERATOR_ENV_KEYS["suspended_apps"]):
-        typer.echo(f"  Current suspended apps: {current_env.get(OPERATOR_ENV_KEYS['suspended_apps'])}")
+        typer.echo(
+            f"  Current suspended apps: {current_env.get(OPERATOR_ENV_KEYS['suspended_apps'])}"
+        )
     typer.echo(f"  New suspended apps: {csv_value or '<empty>'}")
 
     if not yes and not typer.confirm("Apply this change to the operator now?"):
@@ -648,8 +697,8 @@ def _update_suspended_apps(
 
 
 @app.command(
-        "suspend",
-        help="""Suspend reconciliation for an app (runtime override).
+    "suspend",
+    help="""Suspend reconciliation for an app (runtime override).
 
 Examples:
     synos suspend demo-app --yes
@@ -657,9 +706,15 @@ Examples:
 )
 def suspend_app(
     name: str = typer.Argument(..., help="App name to suspend reconciliation for"),
-    operator_app_name: str = typer.Option("synoscd-operator", "--operator-app-name", help="Operator ACA app name"),
-    resource_group: Optional[str] = typer.Option(None, "--resource-group", help="Operator resource group"),
-    yes: bool = typer.Option(False, "--yes", "-y", help="Apply without interactive confirmation"),
+    operator_app_name: str = typer.Option(
+        "synoscd-operator", "--operator-app-name", help="Operator ACA app name"
+    ),
+    resource_group: Optional[str] = typer.Option(
+        None, "--resource-group", help="Operator resource group"
+    ),
+    yes: bool = typer.Option(
+        False, "--yes", "-y", help="Apply without interactive confirmation"
+    ),
 ):
     setup_logging()
     try:
@@ -678,8 +733,8 @@ def suspend_app(
 
 
 @app.command(
-        "resume",
-        help="""Resume reconciliation for an app (runtime override).
+    "resume",
+    help="""Resume reconciliation for an app (runtime override).
 
 Examples:
     synos resume demo-app --yes
@@ -687,9 +742,15 @@ Examples:
 )
 def resume_app(
     name: str = typer.Argument(..., help="App name to resume reconciliation for"),
-    operator_app_name: str = typer.Option("synoscd-operator", "--operator-app-name", help="Operator ACA app name"),
-    resource_group: Optional[str] = typer.Option(None, "--resource-group", help="Operator resource group"),
-    yes: bool = typer.Option(False, "--yes", "-y", help="Apply without interactive confirmation"),
+    operator_app_name: str = typer.Option(
+        "synoscd-operator", "--operator-app-name", help="Operator ACA app name"
+    ),
+    resource_group: Optional[str] = typer.Option(
+        None, "--resource-group", help="Operator resource group"
+    ),
+    yes: bool = typer.Option(
+        False, "--yes", "-y", help="Apply without interactive confirmation"
+    ),
 ):
     setup_logging()
     try:
@@ -708,8 +769,8 @@ def resume_app(
 
 
 @app.command(
-        "describe",
-        help="""Describe an app (alias for 'status app').
+    "describe",
+    help="""Describe an app (alias for 'status app').
 
 Examples:
     synos describe demo-app
@@ -719,7 +780,9 @@ Examples:
 )
 def describe(
     name: str = typer.Argument(..., help="App name"),
-    output: str = typer.Option("table", "--output", "-o", help="Output format: table, json, yaml"),
+    output: str = typer.Option(
+        "table", "--output", "-o", help="Output format: table, json, yaml"
+    ),
     config_path: Optional[str] = typer.Option(None, help="Path to config file"),
     watch: bool = typer.Option(False, "--watch", "-w", help="Refresh continuously"),
     interval: int = typer.Option(5, "--interval", help="Refresh interval in seconds"),

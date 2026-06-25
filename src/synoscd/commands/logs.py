@@ -48,7 +48,9 @@ def _run_az(cmd: list[str]) -> None:
             raise
 
         rendered = " ".join(shlex.quote(part) for part in cmd)
-        subprocess.run([_to_windows_path(bash_path), "-lc", rendered], check=True, text=True)
+        subprocess.run(
+            [_to_windows_path(bash_path), "-lc", rendered], check=True, text=True
+        )
 
 
 @app.command("app")
@@ -56,7 +58,9 @@ def app_logs(
     name: str = typer.Argument(..., help="App name"),
     tail: int = typer.Option(100, "--tail", "-n", help="Number of lines to tail"),
     follow: bool = typer.Option(False, "--follow", "-f", help="Follow log stream"),
-    config_path: Optional[str] = typer.Option(None, help="Path to config file (to get resource group)"),
+    config_path: Optional[str] = typer.Option(
+        None, help="Path to config file (to get resource group)"
+    ),
 ):
     """Stream logs from a container app (wrapper around 'az containerapp logs').
 
@@ -66,7 +70,7 @@ def app_logs(
       synos logs app demo-app -n 50
     """
     setup_logging()
-    
+
     try:
         rg = "synoscd-dev"
         try:
@@ -74,23 +78,31 @@ def app_logs(
             rg = config.azure_resource_group
         except Exception:
             pass
-        
+
         # Build az containerapp logs command
         cmd = [
-            _resolve_az(), "containerapp", "logs", "show",
-            "--name", name,
-            "--resource-group", rg,
-            "--tail", str(tail),
+            _resolve_az(),
+            "containerapp",
+            "logs",
+            "show",
+            "--name",
+            name,
+            "--resource-group",
+            rg,
+            "--tail",
+            str(tail),
         ]
-        
+
         if follow:
             cmd.append("--follow")
-        
+
         if follow:
             typer.echo(f"📋 Streaming logs for '{name}' (Ctrl+C to exit)...\n")
         else:
-            typer.echo(f"📋 Showing last {tail} logs for '{name}' (use --follow/-f to stream).\n")
-        
+            typer.echo(
+                f"📋 Showing last {tail} logs for '{name}' (use --follow/-f to stream).\n"
+            )
+
         # Run the command
         try:
             _run_az(cmd)
@@ -98,9 +110,12 @@ def app_logs(
             typer.echo(f"✗ Failed to get logs: {e.stderr or str(e)}", err=True)
             raise typer.Exit(code=1)
         except FileNotFoundError as exc:
-            typer.echo("✗ Azure CLI not found in this shell PATH. Install Azure CLI or launch this shell after az is available.", err=True)
+            typer.echo(
+                "✗ Azure CLI not found in this shell PATH. Install Azure CLI or launch this shell after az is available.",
+                err=True,
+            )
             raise typer.Exit(code=1) from exc
-            
+
     except KeyboardInterrupt as exc:
         typer.echo("\n\nLogs stopped")
         raise typer.Exit(code=0) from exc
@@ -125,7 +140,7 @@ def operator(
       synos logs operator -n 200
     """
     setup_logging()
-    
+
     try:
         rg = "synoscd-dev"
         try:
@@ -133,23 +148,31 @@ def operator(
             rg = config.azure_resource_group
         except Exception:
             pass
-        
+
         # Build az containerapp logs command for operator
         cmd = [
-            _resolve_az(), "containerapp", "logs", "show",
-            "--name", "synoscd-operator",
-            "--resource-group", rg,
-            "--tail", str(tail),
+            _resolve_az(),
+            "containerapp",
+            "logs",
+            "show",
+            "--name",
+            "synoscd-operator",
+            "--resource-group",
+            rg,
+            "--tail",
+            str(tail),
         ]
-        
+
         if follow:
             cmd.append("--follow")
-        
+
         if follow:
             typer.echo("📋 Streaming operator logs (Ctrl+C to exit)...\n")
         else:
-            typer.echo(f"📋 Showing last {tail} operator logs (use --follow/-f to stream).\n")
-        
+            typer.echo(
+                f"📋 Showing last {tail} operator logs (use --follow/-f to stream).\n"
+            )
+
         # Run the command
         try:
             _run_az(cmd)
@@ -157,9 +180,12 @@ def operator(
             typer.echo(f"✗ Failed to get operator logs: {e.stderr or str(e)}", err=True)
             raise typer.Exit(code=1)
         except FileNotFoundError as exc:
-            typer.echo("✗ Azure CLI not found in this shell PATH. Install Azure CLI or launch this shell after az is available.", err=True)
+            typer.echo(
+                "✗ Azure CLI not found in this shell PATH. Install Azure CLI or launch this shell after az is available.",
+                err=True,
+            )
             raise typer.Exit(code=1) from exc
-            
+
     except KeyboardInterrupt as exc:
         typer.echo("\n\nOperator logs stopped")
         raise typer.Exit(code=0) from exc

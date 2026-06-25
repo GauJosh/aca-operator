@@ -95,7 +95,11 @@ class Reconciler:
 
             filtered_live = [app for app in live_apps if app.get("name") == app_name]
             results = await self._reconcile_resources(filtered_desired, filtered_live)
-            log.msg("Targeted reconciliation pass complete", app_name=app_name, results=results)
+            log.msg(
+                "Targeted reconciliation pass complete",
+                app_name=app_name,
+                results=results,
+            )
             return results
         except Exception as e:
             log.exception(
