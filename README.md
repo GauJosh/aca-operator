@@ -25,40 +25,66 @@ SynosCD brings **Flux-like GitOps** to Azure Container Apps:
 - Optional prune mode for managed apps missing from Git
 - Protected app list to avoid deleting critical apps (e.g. `synoscd-operator`)
 
-## Architecture Model
+## Quick Start
 
-- **One operator per ACE/environment**
-- **One ops repo as source of truth** (recommended)
-- **Apps defined as YAML** under `apps/` (or custom config path)
-- **Terraform/Bicep owns platform foundation** (ACE, identity, network, etc.)
-- **SynosCD owns app-level reconciliation**
+For most users, the fastest path is:
 
-## App Manifest (Git Contract)
+1. Download a release artifact from GitHub Releases
+2. Set the required environment variables
+3. Run a read-only command such as `synos get apps`
 
-```yaml
-apiVersion: synoscd.io/v1alpha1
-kind: App
-metadata:
-  name: demo-app
-  labels:
-    synoscd.io/managed: "true"
-spec:
-  containers:
-    - name: app
-      image: mcr.microsoft.com/azuredocs/containerapps-helloworld:latest
-      cpu: 0.25
-      memory: 0.5Gi
-  ingress:
-    enabled: true
-    external: true
-    targetPort: 80
-  scale:
-    minReplicas: 1
-    maxReplicas: 3
-  suspend: false
+If you are running from a repo checkout or source install and your GitHub App secrets are already stored in Azure Key Vault, you can also use the bootstrap helper:
+
+```bash
+python scripts/bootstrap_env.py --run synos get apps
 ```
 
-## Environment Variables
+That command loads the required environment variables and runs the CLI without needing `source` or `eval`.
+
+## Install / Download
+
+SynosCD releases are published in GitHub Releases.
+
+Each tagged release includes:
+- `synoscd-<version>.tar.gz` source distribution
+- `synoscd-<version>-py3-none-any.whl` wheel
+- `synos-linux-x86_64.tar.gz`
+- `synos-macos-x86_64.tar.gz`
+- `synos.exe`
+
+Choose the format that matches how you want to run it:
+
+### Option 1: Install from wheel or source package
+
+Download the release artifact you want, then install it with pip:
+
+```bash
+pip install synoscd-<version>-py3-none-any.whl
+# or
+pip install synoscd-<version>.tar.gz
+```
+
+### Option 2: Run the standalone binary
+
+- **Windows**: use `synos.exe`
+- **Linux/macOS**: extract the tarball and run `synos`
+
+Example on Linux/macOS:
+
+```bash
+tar -xzf synos-linux-x86_64.tar.gz
+./synos --help
+```
+
+Example on Windows PowerShell:
+
+```powershell
+.\synos.exe --help
+```
+
+## Configuration
+
+SynosCD is configured entirely through environment variables.
 
 ### Required
 
@@ -79,57 +105,18 @@ spec:
 - `SYNOSCD_PRUNE_ENABLED` (default: `false`)
 - `SYNOSCD_PROTECTED_APPS_CSV` (default: `synoscd-operator`)
 
-## Run Locally (Development)
+## Authenticate to Azure
 
-Local run is supported via `DefaultAzureCredential`.
-
-### 1) Setup
+If you are running locally, authenticate first:
 
 ```bash
-python -m venv venv
-source venv/bin/activate  # Windows Git Bash: source venv/Scripts/activate
-pip install -e .
+az login
+az account set --subscription <your-subscription-id>
 ```
 
-You can run SynosCD in any of these ways:
+## Set environment variables and run
 
-```bash
-synos --help
-python -m synoscd --help
-python src/synoscd/cli.py --help
-```
-
-The package is configured for standard installation on Windows, Linux, and macOS.
-
-## Install / Download
-
-### Recommended: pipx or pip install
-
-The easiest way to use SynosCD is from a published release:
-
-```bash
-pipx install synoscd
-# or
-pip install synoscd
-```
-
-### GitHub Release downloads
-
-Each tagged release publishes:
-- `synoscd-<version>.tar.gz` source distribution
-- `synoscd-<version>-py3-none-any.whl` wheel
-- Standalone `synos` binaries for Linux, macOS, and Windows
-
-Use the standalone binary if you want a direct download and run experience.
-
-#### Direct-run prerequisites
-
-The standalone binaries still require configuration at runtime:
-- Azure credentials or managed identity access
-- SynosCD environment variables set
-- Access to the GitHub App private key / Key Vault secret source
-
-Example:
+### Bash / Git Bash / Linux / macOS
 
 ```bash
 export SYNOSCD_GITHUB_APP_ID=<app-id>
@@ -144,7 +131,7 @@ export SYNOSCD_AZURE_CONTAINER_APP_ENVIRONMENT=<ace-name>
 synos get apps
 ```
 
-On Windows PowerShell:
+### Windows PowerShell
 
 ```powershell
 $env:SYNOSCD_GITHUB_APP_ID = '<app-id>'
@@ -159,41 +146,15 @@ $env:SYNOSCD_AZURE_CONTAINER_APP_ENVIRONMENT = '<ace-name>'
 synos get apps
 ```
 
-### 2) Authenticate Azure
+### One-command bootstrap from Key Vault
 
-```bash
-az login
-az account set --subscription <your-subscription-id>
-```
-
-### 3) Export config and run
-
-```bash
-export SYNOSCD_GITHUB_APP_ID=<app-id>
-export SYNOSCD_GITHUB_APP_PRIVATE_KEY="$(cat private-key.pem)"
-export SYNOSCD_GITHUB_APP_INSTALLATION_ID=<installation-id>
-export SYNOSCD_GITHUB_REPO_OWNER=<owner>
-export SYNOSCD_GITHUB_REPO_NAME=<repo>
-export SYNOSCD_AZURE_SUBSCRIPTION_ID=<sub-id>
-export SYNOSCD_AZURE_RESOURCE_GROUP=<resource-group>
-export SYNOSCD_AZURE_CONTAINER_APP_ENVIRONMENT=<ace-name>
-export SYNOSCD_GITHUB_CONFIG_PATH=apps
-export SYNOSCD_RECONCILE_INTERVAL_SECONDS=30
-
-synos operator
-```
-
-### 3b) One-command auto bootstrap from Key Vault
-
-If your GitHub App secrets are in Key Vault (for example `synoscd-vault`), you can auto-load everything with one command:
+If you are running from a repo checkout or source install and your GitHub App secrets are in Key Vault (for example `synoscd-vault`), you can auto-load everything with one command:
 
 ```bash
 python scripts/bootstrap_env.py --run synos get apps
 ```
 
-This is the recommended UX (cross-platform): no `source`, no `eval`, no subshell confusion.
-
-Other examples:
+Other common examples:
 
 ```bash
 python scripts/bootstrap_env.py --run synos config
@@ -234,15 +195,125 @@ Convenience wrappers:
 ./scripts/synos-env.ps1 get apps
 ```
 
-After it runs:
+## Common CLI Commands
 
-```bash
-python scripts/bootstrap_env.py --run synos config
-python scripts/bootstrap_env.py --run synos get source
-python scripts/bootstrap_env.py --run synos get apps
+### Read and inspect
+
+- `synos config` — show active SynosCD configuration
+- `synos get apps [-o table|json|yaml]` — list desired Apps with live health context
+- `synos get source [-o table|json|yaml]` — show Git source details and latest commit
+- `synos get status [-o table|json|yaml]` — show reconciliation summary
+- `synos status app <name> [-o table|json|yaml] [--watch]` — show detailed live status for one app
+- `synos status all [-o table|json|yaml] [--watch]` — show detailed live status for all apps
+- `synos describe <name> [-o table|json|yaml] [--watch]` — alias for `synos status app <name>`
+- `synos diff [--app <name>] [-o table|json|yaml]` — show desired vs live state differences
+
+### Reconcile and operate
+
+- `synos reconcile source [--watch]` — reconcile from Git source now
+- `synos reconcile app <name>` — reconcile one app now
+- `synos sync [--dry-run]` — run one reconciliation pass now
+- `synos operator [--interval <seconds>]` — run the continuous operator loop
+
+### Logs
+
+- `synos logs app <name> [--tail N] [--follow]` — show or stream logs for one ACA app
+- `synos logs operator [--tail N] [--follow]` — show or stream logs for the SynosCD operator
+
+### Runtime control
+
+- `synos set --show` — show current operator runtime settings
+- `synos set --interval <seconds> [--yes]` — change reconcile interval on the running operator
+- `synos set --prune/--no-prune [--yes]` — enable or disable prune on the running operator
+- `synos set --protected-apps <csv> [--yes]` — update protected apps on the running operator
+- `synos set --max-concurrent <n> [--yes]` — update max concurrent reconciles on the running operator
+- `synos suspend <name> [--yes]` — suspend reconciliation for one app at runtime
+- `synos resume <name> [--yes]` — resume reconciliation for one app at runtime
+
+### Setup and admin
+
+- `synos bootstrap ...` — validate/setup bootstrap values for operator configuration
+
+### Global flags
+
+- `--verbose` or `-v` — increase log verbosity
+- `--debug` — enable debug logging
+
+## Daily Usage Flow
+
+A typical user flow looks like this:
+
+1. Confirm configuration with `synos config`
+2. Check source connectivity with `synos get source`
+3. List managed apps with `synos get apps`
+4. Inspect one app with `synos status app <name>` or `synos describe <name>`
+5. Force a refresh with `synos reconcile app <name>` or `synos reconcile source`
+
+If you need temporary operational control without changing Git:
+
+- use `synos suspend <name>` to pause reconciliation for one app
+- use `synos resume <name>` to re-enable reconciliation
+- use `synos set --show` to inspect live operator settings
+- use `synos set --interval ...` or related flags to change runtime operator behavior
+
+## Architecture Model
+
+- **One operator per ACE/environment**
+- **One ops repo as source of truth** (recommended)
+- **Apps defined as YAML** under `apps/` (or custom config path)
+- **Terraform/Bicep owns platform foundation** (ACE, identity, network, etc.)
+- **SynosCD owns app-level reconciliation**
+
+## App Manifest (Git Contract)
+
+```yaml
+apiVersion: synoscd.io/v1alpha1
+kind: App
+metadata:
+  name: demo-app
+  labels:
+    synoscd.io/managed: "true"
+spec:
+  containers:
+    - name: app
+      image: mcr.microsoft.com/azuredocs/containerapps-helloworld:latest
+      cpu: 0.25
+      memory: 0.5Gi
+  ingress:
+    enabled: true
+    external: true
+    targetPort: 80
+  scale:
+    minReplicas: 1
+    maxReplicas: 3
+  suspend: false
 ```
 
-## Deploy Operator to ACA (Podman + ACR)
+## Run from Source (Development)
+
+Local run is supported via `DefaultAzureCredential`.
+
+### 1) Setup
+
+```bash
+python -m venv venv
+source venv/bin/activate  # Windows Git Bash: source venv/Scripts/activate
+pip install -e .
+```
+
+You can run SynosCD in any of these ways:
+
+```bash
+synos --help
+python -m synoscd --help
+python src/synoscd/cli.py --help
+```
+
+The package is configured for standard installation on Windows, Linux, and macOS.
+
+## Operator Deployment (Maintainers / Platform Admins)
+
+This section is mainly for maintainers or platform admins who build and deploy the SynosCD operator image.
 
 ```bash
 ACR_NAME="synoscdacr"
@@ -290,22 +361,6 @@ Prune deletes only apps that are:
 - not present in desired Git state, and
 - not in protected app list
 
-## CLI Commands
-
-- `synos operator` — run operator loop
-- `synos sync` — run one reconciliation pass now
-- `synos config` — show active SynosCD configuration
-- `synos bootstrap` — bootstrap/config validation helper
-- `synos reconcile source` — Flux-like full reconcile from Git source
-- `synos reconcile app <name>` — Flux-like targeted reconcile for one App
-- `synos get apps [-o table|json|yaml]` — list desired Apps with live health context
-- `synos get source [-o table|json]` — show Git source details + latest commit
-- `synos get status [-o table|json]` — show reconciliation summary
-- `synos status app <name>` — show detailed live status for one app
-- `synos status all` — show detailed live status for all apps
-- `synos logs app <name>` — stream logs for one ACA app
-- `synos logs operator` — stream logs for the SynosCD operator
-
 ## Release / Distribution Strategy
 
 SynosCD publishes multiple distribution formats from GitHub Releases:
@@ -317,8 +372,8 @@ SynosCD publishes multiple distribution formats from GitHub Releases:
 | Standalone binary (`synos` / `synos.exe`) | Direct download and run with env vars already configured |
 
 Recommended usage:
-1. **Most users**: `pipx install synoscd`
-2. **Python environments**: `pip install synoscd`
+1. **Most users**: download a GitHub Release artifact
+2. **Python environments**: install the wheel or source distribution with `pip`
 3. **No-Python client machines**: download the standalone release binary
 
 If you use a standalone binary, you still need to set the same SynosCD env vars before running the CLI.
